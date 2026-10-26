@@ -6,6 +6,7 @@ import '../../state/app_state.dart';
 import '../format.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/sheet.dart';
 import 'home_page.dart';
 
 class DuesPage extends StatelessWidget {
@@ -120,11 +121,7 @@ class _MemberDues extends StatelessWidget {
             ? ('미납 ${won(status.unpaid)}', AppColors.red)
             : ('${status.monthsCovered}월분까지', AppColors.green);
     return AppCard(
-      onTap: () => showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        builder: AppScope.carry(context, (_) => _MemberDuesSheet(memberId: status.member.id)),
-      ),
+      onTap: () => showAppSheet(context, (_) => _MemberDuesSheet(memberId: status.member.id)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
         Row(children: [
           Text(status.member.name, style: tt.titleMedium),

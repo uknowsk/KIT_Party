@@ -115,4 +115,17 @@ void main() {
     expect(find.byType(MonthlyFlowCard), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('아래 창 버튼이 폰 하단 뒤로가기 줄에 가리지 않는다', (tester) async {
+    tester.view.padding = const FakeViewPadding(bottom: 48);
+    tester.view.viewPadding = const FakeViewPadding(bottom: 48);
+    await pumpAt(tester, const Size(390, 844));
+    await tester.tap(find.text('장부').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(TxnTile).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final fix = tester.getRect(find.ancestor(of: find.text('수정'), matching: find.byType(FilledButton)));
+    expect(fix.bottom, lessThanOrEqualTo(844 - 48));
+  });
 }

@@ -7,6 +7,7 @@ import '../../state/app_state.dart';
 import '../format.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/sheet.dart';
 import 'txn_editor.dart';
 
 enum _Filter { all, income, expense }
@@ -128,15 +129,11 @@ class _LedgerPageState extends State<LedgerPage> {
   }
 }
 
-Future<void> showTxnDetail(BuildContext context, Txn t) => showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: AppScope.carry(
-        context,
-        (_) => Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          child: TxnDetail(txn: t, inSheet: true),
-        ),
+Future<void> showTxnDetail(BuildContext context, Txn t) => showAppSheet(
+      context,
+      (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: TxnDetail(txn: t, inSheet: true),
       ),
     );
 
@@ -155,8 +152,8 @@ class TxnDetail extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(children: [
             Text(k, style: tt.bodyMedium!.copyWith(color: AppColors.gray)),
-            const Spacer(),
-            Flexible(child: Text(v, style: tt.bodyMedium, textAlign: TextAlign.right)),
+            const SizedBox(width: 16),
+            Expanded(child: Text(v, style: tt.bodyMedium, textAlign: TextAlign.right)),
           ]),
         );
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [

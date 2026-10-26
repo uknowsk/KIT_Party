@@ -158,12 +158,16 @@ class LedgerSettings {
   final String latestVersion;
   final String? apkUrl;
 
+  /// 회장 회원 id. 명단에 '회장' 배지로 보여요.
+  final String? presidentId;
+
   const LedgerSettings({
     required this.openingBalance,
     required this.openingDate,
     this.monthlyDues = 30000,
     this.latestVersion = '1.0.0',
     this.apkUrl,
+    this.presidentId,
   });
 
   Map<String, dynamic> toMap() => {
@@ -172,6 +176,7 @@ class LedgerSettings {
         'monthlyDues': monthlyDues,
         'latestVersion': latestVersion,
         'apkUrl': apkUrl,
+        'presidentId': presidentId,
       };
 
   factory LedgerSettings.fromMap(Map<String, dynamic> m) => LedgerSettings(
@@ -180,5 +185,6 @@ class LedgerSettings {
         monthlyDues: (m['monthlyDues'] as num? ?? 30000).toInt(),
         latestVersion: m['latestVersion'] as String? ?? '1.0.0',
         apkUrl: m['apkUrl'] as String?,
+        presidentId: m['presidentId'] as String?,
       );
 }

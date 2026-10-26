@@ -74,24 +74,44 @@ class SettingsPage extends StatelessWidget {
           const SectionHeader('내 정보'),
           group([
             tile('이름', value: me?.name ?? '-'),
-            tile('역할', trailing: Badge2(s.isTreasurer ? '총무' : '회원', color: s.isTreasurer ? AppColors.blue : AppColors.gray)),
+            tile('역할',
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (s.isPresident) ...[const Badge2('회장', color: AppColors.orange), const SizedBox(width: 6)],
+                  if (s.isTreasurer) const Badge2('총무', color: AppColors.blue),
+                  if (!s.isPresident && !s.isTreasurer) const Badge2('회원', color: AppColors.gray),
+                ])),
             if (onSignOut != null) tile('로그아웃', color: AppColors.red, onTap: onSignOut),
           ]),
           SectionHeader('회원 명단 · ${s.members.length}명'),
           group([
             for (final m in s.members)
               tile(m.name,
+                  onTap: s.canManageExempt ? () => _exemptMenu(context, m) : null,
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     if (m.isExempt(DateTime.now().year)) const Badge2('면제', color: AppColors.gray),
+                    if (s.isPresidentMember(m)) ...[
+                      const SizedBox(width: 6),
+                      const Badge2('회장', color: AppColors.orange),
+                    ],
                     if (m.isTreasurer) ...[
                       const SizedBox(width: 6),
                       const Badge2('총무', color: AppColors.blue),
                     ],
+                    if (s.canManageExempt) const Icon(Icons.chevron_right_rounded, color: AppColors.gray),
                   ])),
           ]),
+          if (s.canManageExempt)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
+              child: Text('이름을 누르면 ${DateTime.now().year}년 회비 면제를 정하거나 풀 수 있어요.',
+                  style: tt.bodySmall!.copyWith(color: AppColors.gray)),
+            ),
           if (s.isTreasurer) ...[
             const SectionHeader('총무 메뉴'),
             group([
+              tile('회장 정하기',
+                  value: s.memberById(s.presidentId)?.name,
+                  onTap: () => _pickMember(context, '누가 회장인가요?', (m) => _run(context, () => repo.setPresident(m.id)))),
               tile('총무 넘기기', onTap: () => _pickMember(context, '누구에게 넘길까요?', (to) async {
                     if (to.id == me!.id) return;
                     final ok = await confirm(context, '${to.name}님에게 총무를 넘길까요?', '넘기면 바로 회원 권한으로 바뀌어요.');
@@ -115,6 +135,42 @@ class SettingsPage extends StatelessWidget {
         ]),
       ],
     );
+  }
+
+  /// 총무: 회원 한 명의 올해 회비 면제를 켜고 끄기.
+  void _exemptMenu(BuildContext context, Member m) {
+    final s = AppScope.of(context);
+    final year = DateTime.now().year;
+    final exempt = m.isExempt(year);
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (c) => CupertinoActionSheet(
+        title: Text('${m.name} · $year년 회비'),
+        message: Text(exempt ? '지금 면제 중이에요.' : '지금 회비를 내는 중이에요.'),
+        actions: [
+          CupertinoActionSheetAction(
+            isDestructiveAction: exempt,
+            onPressed: () {
+              Navigator.pop(c);
+              _run(context, () => s.repo.setExempt(m.id, year, !exempt));
+            },
+            child: Text(exempt ? '면제 풀기' : '회비 면제하기'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(onPressed: () => Navigator.pop(c), child: const Text('취소')),
+      ),
+    );
+  }
+
+  /// 저장하다 실패하면(권한 없음 등) 아래에 짧게 알려줘요.
+  Future<void> _run(BuildContext context, Future<void> Function() job) async {
+    try {
+      await job();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장하지 못했어요: $e')));
+      }
+    }
   }
 
   void _pickMember(BuildContext context, String title, void Function(Member) onPick) {

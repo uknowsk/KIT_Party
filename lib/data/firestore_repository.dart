@@ -64,6 +64,10 @@ class FirestoreRepository implements LedgerRepository {
       });
 
   @override
+  Future<void> setPresident(String memberId) =>
+      _settings.set({'presidentId': memberId}, SetOptions(merge: true));
+
+  @override
   Future<void> transferTreasurer(String fromMemberId, String toMemberId) async {
     final from = Member.fromMap(fromMemberId, (await _members.doc(fromMemberId).get()).data() ?? {});
     final to = Member.fromMap(toMemberId, (await _members.doc(toMemberId).get()).data() ?? {});

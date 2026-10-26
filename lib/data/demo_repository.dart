@@ -77,6 +77,19 @@ class DemoRepository implements LedgerRepository {
   }
 
   @override
+  Future<void> setPresident(String memberId) async {
+    final s = _settings.value;
+    _settings.value = LedgerSettings(
+      openingBalance: s.openingBalance,
+      openingDate: s.openingDate,
+      monthlyDues: s.monthlyDues,
+      latestVersion: s.latestVersion,
+      apkUrl: s.apkUrl,
+      presidentId: memberId,
+    );
+  }
+
+  @override
   Future<void> transferTreasurer(String fromMemberId, String toMemberId) async {
     _members.value = [
       for (final m in _members.value)

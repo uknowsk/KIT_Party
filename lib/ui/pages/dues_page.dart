@@ -200,7 +200,7 @@ class _MemberDuesSheet extends StatelessWidget {
             ),
           ]),
         ),
-        if (s.isTreasurer) ...[
+        if (s.canManageExempt) ...[
           const SizedBox(height: 12),
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -208,7 +208,11 @@ class _MemberDuesSheet extends StatelessWidget {
               Expanded(child: Text('${st.year}년 회비 면제', style: tt.bodyLarge)),
               CupertinoSwitch(
                 value: m.isExempt(st.year),
-                onChanged: (v) => s.repo.setExempt(m.id, st.year, v),
+                onChanged: (v) => s.repo.setExempt(m.id, st.year, v).catchError((Object e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장하지 못했어요: $e')));
+                  }
+                }),
               ),
             ]),
           ),

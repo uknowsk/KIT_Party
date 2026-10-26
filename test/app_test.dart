@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:kit_party/data/demo_repository.dart';
+import 'package:kit_party/data/seed_2026.dart';
 import 'package:kit_party/main.dart';
+import 'package:kit_party/state/app_state.dart';
 import 'package:kit_party/ui/pages/ledger_page.dart';
 import 'package:kit_party/ui/pages/txn_editor.dart';
 import 'package:kit_party/ui/widgets/charts.dart';
@@ -127,5 +130,63 @@ void main() {
     expect(tester.takeException(), isNull);
     final fix = tester.getRect(find.ancestor(of: find.text('수정'), matching: find.byType(FilledButton)));
     expect(fix.bottom, lessThanOrEqualTo(844 - 48));
+  });
+
+  Future<AppState> pumpAs(WidgetTester tester, String name) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = AppState(DemoRepository(), myMemberId: memberIdOf(name));
+    await tester.pumpWidget(KitPartyApp(useFirebase: false, demoState: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('설정').last);
+    await tester.pumpAndSettle();
+    return state;
+  }
+
+  Future<void> toggleExempt(WidgetTester tester, String name, String action) async {
+    await tester.scrollUntilVisible(find.text(name).last, 200);
+    await Scrollable.ensureVisible(tester.element(find.text(name).last), alignment: .5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(name).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(action));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('회장(차광훈)은 배지만 있고 면제 메뉴는 없다', (tester) async {
+    final s = await pumpAs(tester, '차광훈');
+    expect(s.isPresident, isTrue);
+    expect(s.canManageExempt, isFalse);
+    expect(find.text('회장'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('손승현').last, 200);
+    await Scrollable.ensureVisible(tester.element(find.text('손승현').last), alignment: .5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('손승현').last);
+    await tester.pumpAndSettle();
+    expect(find.text('면제 풀기'), findsNothing);
+  });
+
+  testWidgets('총무는 회원 목록에서 면제를 걸고 풀 수 있다', (tester) async {
+    final t = await pumpAs(tester, seedTreasurer);
+    expect(t.canManageExempt, isTrue);
+    final year = DateTime.now().year;
+    bool exempt() => t.memberById(memberIdOf('이창식'))!.isExempt(year);
+    await toggleExempt(tester, '이창식', '회비 면제하기');
+    expect(exempt(), isTrue);
+    await toggleExempt(tester, '이창식', '면제 풀기');
+    expect(exempt(), isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('일반 회원은 면제 메뉴가 없다', (tester) async {
+    final m = await pumpAs(tester, '이창식');
+    expect(m.canManageExempt, isFalse);
+    await tester.scrollUntilVisible(find.text('김기범').last, 200);
+    await Scrollable.ensureVisible(tester.element(find.text('김기범').last), alignment: .5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('김기범').last);
+    await tester.pumpAndSettle();
+    expect(find.text('회비 면제하기'), findsNothing);
   });
 }

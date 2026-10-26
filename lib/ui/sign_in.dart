@@ -102,12 +102,7 @@ class _SignInPageState extends State<_SignInPage> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(color: AppColors.blue, borderRadius: BorderRadius.circular(22)),
-                  child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 44),
-                ),
+                Image.asset('assets/brand/kit_drop.png', width: 88, height: 88),
                 const SizedBox(height: 20),
                 Text('회비장부', style: tt.displaySmall),
                 const SizedBox(height: 8),

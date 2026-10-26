@@ -14,6 +14,9 @@ abstract class LedgerRepository {
   Future<void> saveTxn(Txn t);
   Future<void> deleteTxn(String id);
   Future<void> setExempt(String memberId, int year, bool exempt);
+
+  /// 회장 정하기 (총무만).
+  Future<void> setPresident(String memberId);
   Future<void> transferTreasurer(String fromMemberId, String toMemberId);
   Future<void> setPinned(String messageId, bool pinned);
 

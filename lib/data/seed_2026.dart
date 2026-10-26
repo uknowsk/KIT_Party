@@ -17,7 +17,11 @@ final seedSettings = LedgerSettings(
   openingBalance: 7558523,
   openingDate: DateTime(2026, 1, 1),
   monthlyDues: 30000,
+  presidentId: memberIdOf(seedPresident),
 );
+
+/// 회장. 처음 설정 때 들어가고, 예전에 설정한 장부에 값이 없을 때도 기본값이에요.
+const seedPresident = '차광훈';
 
 String memberIdOf(String name) => 'm_$name';
 

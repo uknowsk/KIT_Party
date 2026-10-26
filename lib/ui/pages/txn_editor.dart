@@ -4,15 +4,11 @@ import 'package:flutter/services.dart';
 
 import '../../models/models.dart';
 import '../../state/app_state.dart';
+import '../widgets/sheet.dart';
 import '../format.dart';
 
 /// 총무가 입출금 기록을 추가·수정하는 시트.
-Future<void> showTxnEditor(BuildContext context, {Txn? preset}) => showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: AppScope.carry(context, (_) => TxnEditor(preset: preset)),
-    );
+Future<void> showTxnEditor(BuildContext context, {Txn? preset}) => showAppSheet(context, (_) => TxnEditor(preset: preset), scrollable: false);
 
 class TxnEditor extends StatefulWidget {
   const TxnEditor({super.key, this.preset});

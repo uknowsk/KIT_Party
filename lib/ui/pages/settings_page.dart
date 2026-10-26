@@ -137,7 +137,7 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  /// 총무·회장: 회원 한 명의 올해 회비 면제를 켜고 끄기.
+  /// 총무: 회원 한 명의 올해 회비 면제를 켜고 끄기.
   void _exemptMenu(BuildContext context, Member m) {
     final s = AppScope.of(context);
     final year = DateTime.now().year;

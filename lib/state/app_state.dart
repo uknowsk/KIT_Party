@@ -38,15 +38,15 @@ class AppState extends ChangeNotifier {
 
   bool get isTreasurer => me?.isTreasurer ?? false;
 
-  /// 회장 회원 id. 장부에 아직 없으면 처음 정한 회장(차광훈).
+  /// 회장 회원 id. 장부에 아직 없으면 처음 정한 회장(차광훈). 회장은 배지만 붙어요.
   String get presidentId => settings?.presidentId ?? memberIdOf(seedPresident);
 
   bool isPresidentMember(Member m) => m.id == presidentId;
 
   bool get isPresident => me != null && me!.id == presidentId;
 
-  /// 회비 면제를 정하고 풀 수 있는 사람: 총무와 회장.
-  bool get canManageExempt => isTreasurer || isPresident;
+  /// 회비 면제를 정하고 풀 수 있는 사람: 총무만.
+  bool get canManageExempt => isTreasurer;
 
   Member? memberById(String? id) {
     for (final m in members) {

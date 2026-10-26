@@ -154,25 +154,29 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('회장(차광훈)은 회원 목록에서 회비 면제를 풀고 다시 걸 수 있다', (tester) async {
+  testWidgets('회장(차광훈)은 배지만 있고 면제 메뉴는 없다', (tester) async {
     final s = await pumpAs(tester, '차광훈');
     expect(s.isPresident, isTrue);
-    expect(s.canManageExempt, isTrue);
-    final year = DateTime.now().year;
-    bool exempt() => s.memberById(memberIdOf('손승현'))!.isExempt(year);
-    final before = exempt();
-    await toggleExempt(tester, '손승현', before ? '면제 풀기' : '회비 면제하기');
-    expect(exempt(), !before);
-    await toggleExempt(tester, '손승현', before ? '회비 면제하기' : '면제 풀기');
-    expect(exempt(), before);
-    expect(tester.takeException(), isNull);
+    expect(s.canManageExempt, isFalse);
+    expect(find.text('회장'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('손승현').last, 200);
+    await Scrollable.ensureVisible(tester.element(find.text('손승현').last), alignment: .5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('손승현').last);
+    await tester.pumpAndSettle();
+    expect(find.text('면제 풀기'), findsNothing);
   });
 
-  testWidgets('총무도 면제를 정할 수 있고, 일반 회원은 못 한다', (tester) async {
+  testWidgets('총무는 회원 목록에서 면제를 걸고 풀 수 있다', (tester) async {
     final t = await pumpAs(tester, seedTreasurer);
     expect(t.canManageExempt, isTrue);
+    final year = DateTime.now().year;
+    bool exempt() => t.memberById(memberIdOf('이창식'))!.isExempt(year);
     await toggleExempt(tester, '이창식', '회비 면제하기');
-    expect(t.memberById(memberIdOf('이창식'))!.isExempt(DateTime.now().year), isTrue);
+    expect(exempt(), isTrue);
+    await toggleExempt(tester, '이창식', '면제 풀기');
+    expect(exempt(), isFalse);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('일반 회원은 면제 메뉴가 없다', (tester) async {

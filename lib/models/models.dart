@@ -158,7 +158,7 @@ class LedgerSettings {
   final String latestVersion;
   final String? apkUrl;
 
-  /// 회장 회원 id. 회장은 총무와 함께 회비 면제를 정할 수 있어요.
+  /// 회장 회원 id. 명단에 '회장' 배지로 보여요.
   final String? presidentId;
 
   const LedgerSettings({

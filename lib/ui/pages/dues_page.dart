@@ -123,7 +123,7 @@ class _MemberDues extends StatelessWidget {
       onTap: () => showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        builder: (_) => _MemberDuesSheet(memberId: status.member.id),
+        builder: AppScope.carry(context, (_) => _MemberDuesSheet(memberId: status.member.id)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
         Row(children: [
@@ -163,22 +163,27 @@ class _MemberDuesSheet extends StatelessWidget {
         Text('${m.name} · ${st.year}년 회비', style: tt.titleLarge, textAlign: TextAlign.center),
         const SizedBox(height: 16),
         AppCard(
-          child: GridView.count(
-            crossAxisCount: 4,
+          child: GridView(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisExtent: 16 + MediaQuery.textScalerOf(context).scale(40),
+            ),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.5,
             children: [
               for (var i = 0; i < 12; i++)
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Text('${i + 1}월', style: tt.labelMedium),
                   const SizedBox(height: 2),
-                  Text(
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
                     st.paidByMonth[i] == 0 ? '–' : won(st.paidByMonth[i]).replaceAll('원', ''),
                     style: tt.bodyMedium!.copyWith(
                       fontWeight: st.paidByMonth[i] == 0 ? null : FontWeight.w600,
                       color: st.paidByMonth[i] == 0 ? AppColors.gray : AppColors.green,
                     ),
+                  ),
                   ),
                 ]),
             ],
@@ -188,8 +193,14 @@ class _MemberDuesSheet extends StatelessWidget {
         AppCard(
           child: Row(children: [
             Text('합계', style: tt.bodyMedium),
-            const Spacer(),
-            Text('${won(st.paid)} / ${won(st.monthly * 12)}', style: tt.titleMedium),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text('${won(st.paid)} / ${won(st.monthly * 12)}', style: tt.titleMedium),
+              ),
+            ),
           ]),
         ),
         if (s.isTreasurer) ...[

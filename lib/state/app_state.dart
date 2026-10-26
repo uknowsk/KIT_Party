@@ -72,4 +72,11 @@ class AppScope extends InheritedNotifier<AppState> {
   const AppScope({super.key, required AppState state, required super.child}) : super(notifier: state);
 
   static AppState of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
+
+  /// 아래에서 올라오는 창은 앱 화면 바깥에 그려져서 상태를 못 찾아요.
+  /// 여는 쪽 상태를 그대로 넘겨줘요.
+  static WidgetBuilder carry(BuildContext from, WidgetBuilder builder) {
+    final state = from.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
+    return (c) => AppScope(state: state, child: Builder(builder: builder));
+  }
 }

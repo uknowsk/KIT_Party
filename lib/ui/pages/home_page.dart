@@ -5,6 +5,7 @@ import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../format.dart';
 import '../theme.dart';
+import '../widgets/charts.dart';
 import '../widgets/common.dart';
 import 'ledger_page.dart';
 import 'txn_editor.dart';
@@ -97,6 +98,11 @@ class HomePage extends StatelessWidget {
             ],
           ]),
         ),
+        const SliverToBoxAdapter(child: SectionHeader('한눈에 보기')),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverToBoxAdapter(child: _Charts(year: now.year, lastMonth: now.month, startIndex: i)),
+        ),
         const SliverToBoxAdapter(child: SectionHeader('최근 기록')),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -119,6 +125,49 @@ class HomePage extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _Charts extends StatelessWidget {
+  const _Charts({required this.year, required this.lastMonth, required this.startIndex});
+
+  final int year;
+  final int lastMonth;
+  final int startIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final settings = s.settings!;
+    final trend = BalanceTrendCard(
+      balances: LedgerMath.monthEndBalances(settings, s.txns, year, lastMonth),
+      opening: settings.openingBalance,
+    );
+    final flows = MonthlyFlowCard(flows: LedgerMath.monthlyFlows(s.txns, year, lastMonth));
+    final donut = ExpenseDonutCard(year: year, parts: LedgerMath.expenseByCategory(s.txns, year));
+    var k = startIndex;
+    Widget item(Widget w) => FadeSlideIn(index: k++, child: w);
+    // 가로로 넓은 화면에선 두 개씩 나란히.
+    if (MediaQuery.sizeOf(context).width >= 760) {
+      return Column(children: [
+        item(IntrinsicHeight(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Expanded(child: trend),
+            const SizedBox(width: 12),
+            Expanded(child: flows),
+          ]),
+        )),
+        const SizedBox(height: 12),
+        item(donut),
+      ]);
+    }
+    return Column(children: [
+      item(trend),
+      const SizedBox(height: 12),
+      item(flows),
+      const SizedBox(height: 12),
+      item(donut),
+    ]);
   }
 }
 

@@ -15,6 +15,30 @@ class LedgerMath {
           (month == null || t.date.month == month))
       .fold(0, (a, t) => a + t.amount);
 
+  /// [year]의 1월부터 [lastMonth]월까지 각 달 말 잔고.
+  static List<int> monthEndBalances(LedgerSettings s, Iterable<Txn> txns, int year, int lastMonth) => [
+        for (var m = 1; m <= lastMonth; m++)
+          balance(s, txns.where((t) => t.date.isBefore(DateTime(year, m + 1)))),
+      ];
+
+  /// [year]의 1월부터 [lastMonth]월까지 달마다 (수입, 지출).
+  static List<(int, int)> monthlyFlows(Iterable<Txn> txns, int year, int lastMonth) => [
+        for (var m = 1; m <= lastMonth; m++)
+          (
+            sum(txns, type: TxnType.income, year: year, month: m),
+            sum(txns, type: TxnType.expense, year: year, month: m),
+          ),
+      ];
+
+  /// [year] 지출을 분류별로 모아 큰 순서로.
+  static List<(String, int)> expenseByCategory(Iterable<Txn> txns, int year) {
+    final map = <String, int>{};
+    for (final t in txns) {
+      if (t.type == TxnType.expense && t.date.year == year) map[t.category] = (map[t.category] ?? 0) + t.amount;
+    }
+    return map.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2));
+  }
+
   /// [asOf] 시점까지 한 해 동안 낼 회비와 낸 회비.
   static List<DuesStatus> dues({
     required List<Member> members,

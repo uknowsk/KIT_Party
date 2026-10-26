@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kit_party/main.dart';
+import 'package:kit_party/ui/pages/ledger_page.dart';
+import 'package:kit_party/ui/pages/txn_editor.dart';
+import 'package:kit_party/ui/widgets/charts.dart';
+import 'package:kit_party/ui/widgets/common.dart';
 
 void main() {
   setUpAll(() => initializeDateFormatting('ko_KR'));
@@ -62,5 +66,53 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+  });
+
+  testWidgets('기록 추가·이자 입력·기록 상세 창이 뜬다', (tester) async {
+    await pumpAt(tester, const Size(390, 844));
+    for (final b in ['기록 추가', '이자 입력']) {
+      await tester.tap(find.text(b));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TxnEditor), findsOneWidget, reason: b);
+      await tester.tapAt(const Offset(195, 20));
+      await tester.pumpAndSettle();
+      expect(find.byType(TxnEditor), findsNothing);
+    }
+    // 장부 탭: + 버튼과 기록 누르기
+    await tester.tap(find.text('장부').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(TxnEditor), findsOneWidget);
+    await tester.tapAt(const Offset(195, 20));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(TxnTile).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(TxnDetail), findsOneWidget);
+    await tester.tap(find.text('수정'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(TxnEditor), findsOneWidget);
+    Navigator.of(tester.element(find.byType(TxnEditor))).pop();
+    await tester.pumpAndSettle();
+    // 회비 탭: 회원 카드 누르기
+    await tester.tap(find.text('회비').last);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('이창식'), 200);
+    await tester.tap(find.text('이창식'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(BottomSheet), findsOneWidget);
+  });
+
+  testWidgets('홈에 그래프 3개가 그려진다', (tester) async {
+    await pumpAt(tester, const Size(390, 844));
+    expect(find.byType(BalanceTrendCard), findsOneWidget);
+    await tester.scrollUntilVisible(find.byType(ExpenseDonutCard), 300);
+    expect(find.byType(MonthlyFlowCard), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

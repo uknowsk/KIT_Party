@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'data/demo_repository.dart';
+import 'data/seed_2026.dart';
 import 'firebase_options.dart';
 import 'state/app_state.dart';
 import 'ui/shell.dart';
@@ -49,7 +50,7 @@ class _DemoRoot extends StatefulWidget {
 }
 
 class _DemoRootState extends State<_DemoRoot> {
-  late final AppState _state = widget.state ?? AppState(DemoRepository(), myMemberId: 'm_이창식');
+  late final AppState _state = widget.state ?? AppState(DemoRepository(), myMemberId: memberIdOf(seedTreasurer));
 
   @override
   Widget build(BuildContext context) => AppScope(

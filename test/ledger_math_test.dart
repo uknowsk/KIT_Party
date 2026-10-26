@@ -45,4 +45,8 @@ void main() {
     expect(back.memberId, t.memberId);
     expect(back.type, t.type);
   });
+
+  test('총무는 김신겸 한 명', () {
+    expect(members.where((m) => m.isTreasurer).map((m) => m.name), ['김신겸']);
+  });
 }

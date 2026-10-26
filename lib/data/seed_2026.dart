@@ -7,6 +7,9 @@ const seedMemberNames = [
   '신지만', '최진영', '손승현', '김창희', '이준섭', '김신겸',
 ];
 
+/// 현재 총무.
+const seedTreasurer = '김신겸';
+
 /// 2026년 회비 면제 회원.
 const seedExempt2026 = {'손승현', '이준섭'};
 
@@ -20,7 +23,12 @@ String memberIdOf(String name) => 'm_$name';
 
 List<Member> seedMembers() => [
       for (final n in seedMemberNames)
-        Member(id: memberIdOf(n), name: n, exemptYears: seedExempt2026.contains(n) ? const [2026] : const []),
+        Member(
+          id: memberIdOf(n),
+          name: n,
+          role: n == seedTreasurer ? Role.treasurer : Role.member,
+          exemptYears: seedExempt2026.contains(n) ? const [2026] : const [],
+        ),
     ];
 
 /// (월, 분류, 항목, 금액, 관련 회원 이름)

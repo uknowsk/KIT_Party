@@ -8,16 +8,15 @@ import 'seed_2026.dart';
 class DemoRepository implements LedgerRepository {
   DemoRepository() {
     final ms = seedMembers();
-    // 체험 모드에서는 첫 번째 회원을 총무로 둡니다.
-    ms[0] = ms[0].copyWith(role: Role.treasurer);
+    final treasurer = ms.firstWhere((m) => m.isTreasurer);
     _members.value = ms;
     _txns.value = seedTxns();
     _settings.value = seedSettings;
     _messages.value = [
       Message(
         id: 'welcome',
-        authorId: ms[0].id,
-        authorName: ms[0].name,
+        authorId: treasurer.id,
+        authorName: treasurer.name,
         text: '회비장부 앱에 오신 걸 환영합니다! 궁금한 건 여기 남겨주세요.',
         createdAt: DateTime(2026, 10, 25, 9),
         pinned: true,

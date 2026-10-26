@@ -14,6 +14,19 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('처음 열면 학교 로고와 "99 제어계측 동기"가 보이고, 곧 앱으로 넘어간다', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const KitPartyApp(useFirebase: false));
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.text('99 제어계측 동기'), findsOneWidget);
+    expect(find.bySemanticsLabel('국립금오공과대학교'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('99 제어계측 동기'), findsNothing);
+    expect(find.text('지금 잔고'), findsOneWidget);
+  });
+
   testWidgets('세로 화면: 하단 탭 5개가 보이고 탭을 옮겨 다닐 수 있다', (tester) async {
     await pumpAt(tester, const Size(390, 844));
     expect(find.byType(NavigationBar), findsOneWidget);

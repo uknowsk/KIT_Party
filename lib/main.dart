@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'state/app_state.dart';
 import 'ui/shell.dart';
 import 'ui/sign_in.dart';
+import 'ui/splash.dart';
 import 'ui/theme.dart';
 
 Future<void> main() async {
@@ -36,7 +37,7 @@ class KitPartyApp extends StatelessWidget {
         darkTheme: AppTheme.dark(),
         // 폰 글씨 크기 설정은 따르되, 화면이 깨지지 않게 1.3배까지만.
         builder: (context, child) => MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3, child: child!),
-        home: useFirebase ? const AuthGate() : _DemoRoot(state: demoState),
+        home: SplashGate(child: useFirebase ? const AuthGate() : _DemoRoot(state: demoState)),
       );
 }
 

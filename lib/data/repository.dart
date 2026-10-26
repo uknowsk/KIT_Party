@@ -17,6 +17,9 @@ abstract class LedgerRepository {
 
   /// 회장 정하기 (총무만).
   Future<void> setPresident(String memberId);
+
+  /// 생일 넣기·지우기 (총무만). [mmdd]가 null이면 지워요.
+  Future<void> setBirthday(String memberId, String? mmdd);
   Future<void> transferTreasurer(String fromMemberId, String toMemberId);
   Future<void> setPinned(String messageId, bool pinned);
 

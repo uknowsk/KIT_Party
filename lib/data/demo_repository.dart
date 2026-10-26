@@ -77,6 +77,11 @@ class DemoRepository implements LedgerRepository {
   }
 
   @override
+  Future<void> setBirthday(String memberId, String? mmdd) async {
+    _members.value = [for (final m in _members.value) m.id == memberId ? m.withBirthday(mmdd) : m];
+  }
+
+  @override
   Future<void> setPresident(String memberId) async {
     final s = _settings.value;
     _settings.value = LedgerSettings(

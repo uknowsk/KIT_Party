@@ -64,6 +64,10 @@ class FirestoreRepository implements LedgerRepository {
       });
 
   @override
+  Future<void> setBirthday(String memberId, String? mmdd) =>
+      _members.doc(memberId).update({'birthday': mmdd ?? FieldValue.delete()});
+
+  @override
   Future<void> setPresident(String memberId) =>
       _settings.set({'presidentId': memberId}, SetOptions(merge: true));
 

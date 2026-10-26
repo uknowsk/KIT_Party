@@ -27,13 +27,26 @@ class Member {
   /// 회비를 면제받는 해 (예: 2026).
   final List<int> exemptYears;
 
+  /// 생일 "MM-DD" (예: "03-14"). 총무가 넣어요. 연도는 안 받아요.
+  final String? birthday;
+
   const Member({
     required this.id,
     required this.name,
     this.role = Role.member,
     this.uid,
     this.exemptYears = const [],
+    this.birthday,
   });
+
+  int? get birthMonth => birthday == null ? null : int.tryParse(birthday!.split('-').first);
+  int? get birthDay => birthday == null ? null : int.tryParse(birthday!.split('-').last);
+
+  /// "3월 14일" 처럼 보여줄 글자.
+  String? get birthdayLabel => birthMonth == null ? null : '$birthMonth월 $birthDay일';
+
+  static String birthdayKey(int month, int day) =>
+      '${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 
   bool get isTreasurer => role == Role.treasurer;
   bool isExempt(int year) => exemptYears.contains(year);
@@ -44,6 +57,16 @@ class Member {
         role: role ?? this.role,
         uid: uid ?? this.uid,
         exemptYears: exemptYears ?? this.exemptYears,
+        birthday: birthday,
+      );
+
+  Member withBirthday(String? value) => Member(
+        id: id,
+        name: name,
+        role: role,
+        uid: uid,
+        exemptYears: exemptYears,
+        birthday: value,
       );
 
   Map<String, dynamic> toMap() => {
@@ -51,6 +74,7 @@ class Member {
         'role': role.name,
         'uid': uid,
         'exemptYears': exemptYears,
+        'birthday': birthday,
       };
 
   factory Member.fromMap(String id, Map<String, dynamic> m) => Member(
@@ -59,6 +83,7 @@ class Member {
         role: m['role'] == 'treasurer' ? Role.treasurer : Role.member,
         uid: m['uid'] as String?,
         exemptYears: [for (final y in (m['exemptYears'] as List? ?? [])) (y as num).toInt()],
+        birthday: m['birthday'] as String?,
       );
 }
 

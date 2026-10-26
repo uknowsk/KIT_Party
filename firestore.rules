@@ -8,21 +8,32 @@ service cloud.firestore {
     function me() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
     function isMember() { return signedIn() && exists(/databases/$(db)/documents/users/$(request.auth.uid)); }
     function isTreasurer() { return isMember() && me().role == 'treasurer'; }
+    // 처음 설정: 아직 아무도 설정하지 않았고, 같은 묶음 저장에 내 이름으로 setup 표시가 들어갈 때만.
+    function bootstrapping() {
+      return signedIn()
+        && !exists(/databases/$(db)/documents/meta/setup)
+        && getAfter(/databases/$(db)/documents/meta/setup).data.by == request.auth.uid;
+    }
+
+    match /meta/setup {
+      allow get: if signedIn();
+      allow create: if bootstrapping();
+    }
 
     match /config/{doc} {
       allow read: if isMember();
-      allow write: if isTreasurer();
+      allow write: if isTreasurer() || bootstrapping();
     }
 
     match /members/{memberId} {
       // 가입 화면에서 이름을 고르려면 로그인만 해도 명단은 보여야 해요.
       allow read: if signedIn();
-      allow write: if isTreasurer();
+      allow write: if isTreasurer() || bootstrapping();
     }
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isMember());
-      allow write: if isTreasurer();
+      allow write: if isTreasurer() || (bootstrapping() && request.auth.uid == uid);
     }
 
     match /joinRequests/{uid} {
@@ -33,7 +44,7 @@ service cloud.firestore {
 
     match /transactions/{id} {
       allow read: if isMember();
-      allow write: if isTreasurer()
+      allow write: if (isTreasurer() || bootstrapping())
         && (request.resource == null || (request.resource.data.amount is int && request.resource.data.amount >= 0));
     }
 

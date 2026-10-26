@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/auth_service.dart';
 import '../data/firestore_repository.dart';
+import '../data/seed_2026.dart';
 import '../models/models.dart';
 import '../state/app_state.dart';
 import 'shell.dart';
@@ -50,7 +51,17 @@ class _MemberGateState extends State<_MemberGate> {
         builder: (context, snap) {
           if (!snap.hasData && snap.connectionState == ConnectionState.waiting) return const _Splash();
           final memberId = snap.data;
-          if (memberId == null) return _JoinPage(repo: _repo, user: widget.user);
+          if (memberId == null) {
+            return StreamBuilder<bool>(
+              stream: _repo.setupDone(),
+              builder: (context, setup) {
+                if (!setup.hasData) return const _Splash();
+                return setup.data!
+                    ? _JoinPage(repo: _repo, user: widget.user)
+                    : _SetupPage(repo: _repo, user: widget.user);
+              },
+            );
+          }
           _state ??= AppState(_repo, myMemberId: memberId);
           return AppScope(
             state: _state!,
@@ -178,6 +189,66 @@ class _JoinPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// 앱을 맨 처음 켠 사람에게만 나오는 화면: 내 이름을 고르면 명단과 시트 데이터를 올려요.
+class _SetupPage extends StatefulWidget {
+  const _SetupPage({required this.repo, required this.user});
+
+  final FirestoreRepository repo;
+  final User user;
+
+  @override
+  State<_SetupPage> createState() => _SetupPageState();
+}
+
+class _SetupPageState extends State<_SetupPage> {
+  String _memberId = memberIdOf(seedTreasurer);
+  bool _busy = false;
+
+  Future<void> _run() async {
+    setState(() => _busy = true);
+    try {
+      await widget.repo.bootstrap(uid: widget.user.uid, memberId: _memberId, email: widget.user.email);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('설정 실패: $e')));
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('처음 설정'),
+        actions: [TextButton(onPressed: AuthService.signOut, child: const Text('로그아웃'))],
+      ),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        Text('아직 장부가 비어 있어요.\n내 이름을 고르면 회원 명단과 구글 시트 기록(2026년 1~10월)을 올리고, '
+            '내가 우선 총무 권한을 받아요. 나중에 설정에서 총무를 넘길 수 있어요.',
+            style: tt.bodyMedium),
+        const SizedBox(height: 16),
+        for (final n in seedMemberNames)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              tileColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              title: Text(n == seedTreasurer ? '$n (현재 총무)' : n),
+              trailing: _memberId == memberIdOf(n)
+                  ? const Icon(Icons.check_circle_rounded, color: AppColors.blue)
+                  : null,
+              onTap: () => setState(() => _memberId = memberIdOf(n)),
+            ),
+          ),
+        const SizedBox(height: 8),
+        FilledButton(onPressed: _busy ? null : _run, child: Text(_busy ? '올리는 중…' : '이 이름으로 시작하기')),
+      ]),
     );
   }
 }

@@ -19,16 +19,28 @@
 
 | 모드 | 언제 | 데이터 |
 | --- | --- | --- |
-| 체험 모드 | Firebase 연결 전 (지금) | 시트 데이터가 앱 안에 들어 있고, 바꾼 내용은 저장되지 않음. 설정 → "누구로 볼까요?"로 총무/회원 화면을 바꿔볼 수 있음 |
-| 실제 모드 | `lib/firebase_options.dart`가 채워진 뒤 | Firestore 실시간 동기화 + 구글 로그인 |
+| 실제 모드 | 안드로이드 앱 | Firebase 프로젝트 `kit-party`에 실시간 저장 + 구글 로그인 |
+| 체험 모드 | 웹 미리보기, 테스트 | 시트 데이터가 앱 안에 들어 있고, 바꾼 내용은 저장되지 않음 |
 
-## Firebase 연결하기 (다음 단계에서 같이 해요)
+## 처음 켜면
 
-1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트 만들기
-2. Authentication → 로그인 방법 → Google 켜기
-3. Firestore Database 만들기 → 규칙 탭에 [`firestore.rules`](firestore.rules) 붙여넣기
-4. 이 폴더에서 `flutterfire configure` 실행 → `lib/firebase_options.dart`가 자동으로 바뀜
-5. 처음 한 번은 콘솔에서 명단(`members`)과 설정(`config/settings`)을 넣고, 총무 계정의 `users/{uid}` 문서에 `role: treasurer`를 지정
+1. 구글 로그인
+2. 장부가 비어 있으면 **처음 설정** 화면 → 내 이름 고르기 → 명단·설정·시트 기록 50건이 올라가고, 고른 사람이 총무가 됨 (한 번만 가능, 보안 규칙이 막음)
+3. 그다음부터 들어오는 회원은 이름을 골라 **가입 신청** → 총무가 설정 화면에서 승인
+
+## Firebase 설정 (한 번만)
+
+- Authentication → Google 로그인 사용
+- Firestore → 규칙 탭에 [`firestore.rules`](firestore.rules) 내용 붙여넣고 게시
+- 프로젝트 설정 → 내 앱 → 회비장부 → 릴리스 서명 키의 SHA-1, SHA-256 지문 등록
+
+## 설치 파일(APK) 만들기
+
+GitHub Actions가 자동으로 만들어요 ([`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)).
+
+- main에 올라갈 때마다: Actions 실행 결과의 Artifacts에 `kit-party-apk`
+- `v1.0.0` 같은 태그를 달면: Releases에 APK 다운로드 링크
+- 서명 키는 저장소 Settings → Secrets and variables → Actions에 `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`로 넣어둬요. 키 파일 자체는 저장소에 올리지 않아요.
 
 ## Firestore 구조
 

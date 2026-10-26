@@ -11,7 +11,7 @@ Future<void> showTxnEditor(BuildContext context, {Txn? preset}) => showModalBott
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => TxnEditor(preset: preset),
+      builder: AppScope.carry(context, (_) => TxnEditor(preset: preset)),
     );
 
 class TxnEditor extends StatefulWidget {

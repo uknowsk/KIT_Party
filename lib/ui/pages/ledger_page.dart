@@ -131,9 +131,12 @@ class _LedgerPageState extends State<LedgerPage> {
 Future<void> showTxnDetail(BuildContext context, Txn t) => showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        child: TxnDetail(txn: t, inSheet: true),
+      builder: AppScope.carry(
+        context,
+        (_) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: TxnDetail(txn: t, inSheet: true),
+        ),
       ),
     );
 

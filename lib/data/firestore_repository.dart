@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/models.dart';
 import 'repository.dart';
+import 'seed_2026.dart';
 
 /// Firestore 구조
 /// - members/{memberId}      회원 명단 (이름, 역할, 연결된 uid, 면제 연도)
@@ -89,6 +90,30 @@ class FirestoreRepository implements LedgerRepository {
 
   @override
   Future<void> deleteMessage(String id) => _messages.doc(id).delete();
+
+  // ---- 처음 설정 ----
+
+  DocumentReference<Map<String, dynamic>> get _setup => _db.collection('meta').doc('setup');
+
+  /// 처음 설정(명단·시트 데이터 업로드)이 끝났는지.
+  Stream<bool> setupDone() => _setup.snapshots().map((d) => d.exists);
+
+  /// 앱을 처음 켠 사람이 한 번만 실행: 명단, 설정, 시트 기록을 올리고
+  /// 그 사람을 고른 이름과 연결해 총무 권한을 줘요. (보안 규칙이 한 번만 허용)
+  Future<void> bootstrap({required String uid, required String memberId, String? email}) async {
+    final b = _db.batch();
+    for (final m in seedMembers()) {
+      final role = m.id == memberId ? Role.treasurer : Role.member;
+      b.set(_members.doc(m.id), m.copyWith(role: role, uid: m.id == memberId ? uid : null).toMap());
+    }
+    b.set(_users.doc(uid), {'memberId': memberId, 'role': 'treasurer', 'email': email});
+    b.set(_settings, seedSettings.toMap());
+    for (final t in seedTxns()) {
+      b.set(_txns.doc(t.id), {...t.toMap(), 'updatedBy': uid, 'updatedAt': FieldValue.serverTimestamp()});
+    }
+    b.set(_setup, {'by': uid, 'at': FieldValue.serverTimestamp()});
+    await b.commit();
+  }
 
   // ---- 가입 ----
 

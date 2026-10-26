@@ -1,0 +1,51 @@
+rules_version = '2';
+// 회비장부 보안 규칙
+// - 회원(승인된 사람)은 모두 읽기 가능, 메시지만 쓰기 가능
+// - 돈과 관련된 기록은 총무만 쓰기 가능
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function isMember() { return signedIn() && exists(/databases/$(db)/documents/users/$(request.auth.uid)); }
+    function isTreasurer() { return isMember() && me().role == 'treasurer'; }
+
+    match /config/{doc} {
+      allow read: if isMember();
+      allow write: if isTreasurer();
+    }
+
+    match /members/{memberId} {
+      // 가입 화면에서 이름을 고르려면 로그인만 해도 명단은 보여야 해요.
+      allow read: if signedIn();
+      allow write: if isTreasurer();
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isMember());
+      allow write: if isTreasurer();
+    }
+
+    match /joinRequests/{uid} {
+      allow create, update: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() && (request.auth.uid == uid || isTreasurer());
+      allow delete: if isTreasurer();
+    }
+
+    match /transactions/{id} {
+      allow read: if isMember();
+      allow write: if isTreasurer()
+        && (request.resource == null || (request.resource.data.amount is int && request.resource.data.amount >= 0));
+    }
+
+    match /messages/{id} {
+      allow read: if isMember();
+      allow create: if isMember()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.pinned == false
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 1000;
+      allow delete: if isMember() && (resource.data.authorUid == request.auth.uid || isTreasurer());
+      allow update: if isTreasurer() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned']);
+    }
+  }
+}

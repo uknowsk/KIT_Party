@@ -39,7 +39,7 @@
 GitHub Actions가 자동으로 만들어요 ([`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)).
 
 - main에 올라갈 때마다: Actions 실행 결과의 Artifacts에 `kit-party-apk`
-- `v1.0.0` 같은 태그를 달면: Releases에 APK 다운로드 링크
+- `pubspec.yaml` 버전으로 된 Release가 없으면 main에 올라갈 때 자동으로 만들어요 (예: v1.0.0). 새 버전을 내려면 버전 숫자만 올리면 돼요
 - 서명 키는 저장소 Settings → Secrets and variables → Actions에 `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`로 넣어둬요. 키 파일 자체는 저장소에 올리지 않아요.
 
 ## Firestore 구조

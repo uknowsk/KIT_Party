@@ -86,8 +86,12 @@ class SettingsPage extends StatelessWidget {
           group([
             for (final m in s.members)
               tile(m.name,
-                  onTap: s.canManageExempt ? () => _exemptMenu(context, m) : null,
+                  onTap: s.isTreasurer ? () => _memberMenu(context, m) : null,
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    if (m.birthdayLabel != null) ...[
+                      Text('🎂 ${m.birthdayLabel}', style: tt.bodySmall!.copyWith(color: AppColors.gray)),
+                      const SizedBox(width: 6),
+                    ],
                     if (m.isExempt(DateTime.now().year)) const Badge2('면제', color: AppColors.gray),
                     if (s.isPresidentMember(m)) ...[
                       const SizedBox(width: 6),
@@ -97,13 +101,13 @@ class SettingsPage extends StatelessWidget {
                       const SizedBox(width: 6),
                       const Badge2('총무', color: AppColors.blue),
                     ],
-                    if (s.canManageExempt) const Icon(Icons.chevron_right_rounded, color: AppColors.gray),
+                    if (s.isTreasurer) const Icon(Icons.chevron_right_rounded, color: AppColors.gray),
                   ])),
           ]),
-          if (s.canManageExempt)
+          if (s.isTreasurer)
             Padding(
               padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
-              child: Text('이름을 누르면 ${DateTime.now().year}년 회비 면제를 정하거나 풀 수 있어요.',
+              child: Text('이름을 누르면 생일을 넣거나 ${DateTime.now().year}년 회비 면제를 정할 수 있어요.',
                   style: tt.bodySmall!.copyWith(color: AppColors.gray)),
             ),
           if (s.isTreasurer) ...[
@@ -137,28 +141,103 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  /// 총무: 회원 한 명의 올해 회비 면제를 켜고 끄기.
-  void _exemptMenu(BuildContext context, Member m) {
+  /// 총무: 회원 한 명의 생일과 올해 회비 면제를 정하는 메뉴.
+  void _memberMenu(BuildContext context, Member m) {
     final s = AppScope.of(context);
     final year = DateTime.now().year;
     final exempt = m.isExempt(year);
     showCupertinoModalPopup<void>(
       context: context,
       builder: (c) => CupertinoActionSheet(
-        title: Text('${m.name} · $year년 회비'),
-        message: Text(exempt ? '지금 면제 중이에요.' : '지금 회비를 내는 중이에요.'),
+        title: Text(m.name),
+        message: Text('생일 ${m.birthdayLabel ?? '미입력'} · $year년 회비 ${exempt ? '면제 중' : '내는 중'}'),
         actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(c);
+              _pickBirthday(context, m);
+            },
+            child: Text(m.birthday == null ? '생일 넣기' : '생일 바꾸기'),
+          ),
+          if (m.birthday != null)
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                Navigator.pop(c);
+                _run(context, () => s.repo.setBirthday(m.id, null));
+              },
+              child: const Text('생일 지우기'),
+            ),
           CupertinoActionSheetAction(
             isDestructiveAction: exempt,
             onPressed: () {
               Navigator.pop(c);
               _run(context, () => s.repo.setExempt(m.id, year, !exempt));
             },
-            child: Text(exempt ? '면제 풀기' : '회비 면제하기'),
+            child: Text(exempt ? '회비 면제 풀기' : '회비 면제하기'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(onPressed: () => Navigator.pop(c), child: const Text('취소')),
       ),
+    );
+  }
+
+  /// 월·일 두 바퀴로 생일 고르기.
+  void _pickBirthday(BuildContext context, Member m) {
+    final s = AppScope.of(context);
+    var month = m.birthMonth ?? 1;
+    var day = m.birthDay ?? 1;
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (c) {
+        final bg = CupertinoColors.systemBackground.resolveFrom(c);
+        return Container(
+          color: bg,
+          child: SafeArea(
+            top: false,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Row(children: [
+                CupertinoButton(onPressed: () => Navigator.pop(c), child: const Text('취소')),
+                Expanded(
+                  child: Text('${m.name} 생일',
+                      textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
+                ),
+                CupertinoButton(
+                  onPressed: () {
+                    Navigator.pop(c);
+                    // 2월 30일 같은 날은 그 달 마지막 날로 (2월은 29일까지 허용).
+                    final last = DateTime(2024, month + 1, 0).day;
+                    final d = day > last ? last : day;
+                    _run(context, () => s.repo.setBirthday(m.id, Member.birthdayKey(month, d)));
+                  },
+                  child: const Text('저장', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ]),
+              SizedBox(
+                height: 200,
+                child: Row(children: [
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 36,
+                      scrollController: FixedExtentScrollController(initialItem: month - 1),
+                      onSelectedItemChanged: (i) => month = i + 1,
+                      children: [for (var i = 1; i <= 12; i++) Center(child: Text('$i월'))],
+                    ),
+                  ),
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 36,
+                      scrollController: FixedExtentScrollController(initialItem: day - 1),
+                      onSelectedItemChanged: (i) => day = i + 1,
+                      children: [for (var i = 1; i <= 31; i++) Center(child: Text('$i일'))],
+                    ),
+                  ),
+                ]),
+              ),
+            ]),
+          ),
+        );
+      },
     );
   }
 

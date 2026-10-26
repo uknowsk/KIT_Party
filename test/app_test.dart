@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:kit_party/data/demo_repository.dart';
 import 'package:kit_party/data/seed_2026.dart';
 import 'package:kit_party/main.dart';
+import 'package:kit_party/models/models.dart';
 import 'package:kit_party/state/app_state.dart';
 import 'package:kit_party/ui/pages/ledger_page.dart';
 import 'package:kit_party/ui/pages/txn_editor.dart';
@@ -174,7 +175,7 @@ void main() {
     bool exempt() => t.memberById(memberIdOf('이창식'))!.isExempt(year);
     await toggleExempt(tester, '이창식', '회비 면제하기');
     expect(exempt(), isTrue);
-    await toggleExempt(tester, '이창식', '면제 풀기');
+    await toggleExempt(tester, '이창식', '회비 면제 풀기');
     expect(exempt(), isFalse);
     expect(tester.takeException(), isNull);
   });
@@ -188,5 +189,36 @@ void main() {
     await tester.tap(find.text('김기범').last);
     await tester.pumpAndSettle();
     expect(find.text('회비 면제하기'), findsNothing);
+  });
+
+  testWidgets('총무가 회원 목록에서 생일을 넣고 지운다', (tester) async {
+    final t = await pumpAs(tester, seedTreasurer);
+    await toggleExempt(tester, '김기범', '생일 넣기');
+    expect(find.text('김기범 생일'), findsOneWidget);
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+    expect(t.memberById(memberIdOf('김기범'))!.birthday, '01-01');
+    expect(find.text('🎂 1월 1일'), findsOneWidget);
+    await toggleExempt(tester, '김기범', '생일 지우기');
+    expect(t.memberById(memberIdOf('김기범'))!.birthday, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('이번 달 생일자가 홈에 보인다', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = AppState(DemoRepository(), myMemberId: memberIdOf('이창식'));
+    final now = DateTime.now();
+    await tester.pumpWidget(KitPartyApp(useFirebase: false, demoState: state));
+    await tester.pumpAndSettle();
+    expect(find.text('${now.month}월 생일'), findsNothing);
+    await state.repo.setBirthday(memberIdOf('손승현'), Member.birthdayKey(now.month, 12));
+    // 새로 생긴 카드가 살짝 늦게 떠오르는 효과(타이머)까지 흘려보내요.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('${now.month}월 생일'), findsOneWidget);
+    expect(find.text('손승현 12일'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 }

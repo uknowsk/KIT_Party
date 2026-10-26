@@ -68,6 +68,10 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 12),
               item(_MyDuesCard(status: myDues, onTap: onOpenDues)),
             ],
+            if (s.members.any((m) => m.birthMonth == now.month)) ...[
+              const SizedBox(height: 12),
+              item(_BirthdayCard(month: now.month, members: s.members)),
+            ],
             if (s.isTreasurer) ...[
               const SizedBox(height: 12),
               item(Row(children: [
@@ -168,6 +172,37 @@ class _Charts extends StatelessWidget {
       const SizedBox(height: 12),
       item(donut),
     ]);
+  }
+}
+
+/// 이번 달 생일인 회원들. 생일 순서로.
+class _BirthdayCard extends StatelessWidget {
+  const _BirthdayCard({required this.month, required this.members});
+
+  final int month;
+  final List<Member> members;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final list = members.where((m) => m.birthMonth == month).toList()
+      ..sort((a, b) => a.birthDay!.compareTo(b.birthDay!));
+    return AppCard(
+      child: Row(children: [
+        const Text('🎂', style: TextStyle(fontSize: 28)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$month월 생일', style: tt.labelMedium),
+            const SizedBox(height: 2),
+            Text(
+              list.map((m) => '${m.name} ${m.birthDay}일').join(' · '),
+              style: tt.titleSmall,
+            ),
+          ]),
+        ),
+      ]),
+    );
   }
 }
 

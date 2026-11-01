@@ -39,6 +39,17 @@ class LedgerMath {
     return map.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2));
   }
 
+  /// [type] 기록을 분류별로 모아 큰 순서로. [month]가 없으면 한 해 전체.
+  static List<(String, int)> byCategory(Iterable<Txn> txns, TxnType type, int year, [int? month]) {
+    final map = <String, int>{};
+    for (final t in txns) {
+      if (t.type == type && t.date.year == year && (month == null || t.date.month == month)) {
+        map[t.category] = (map[t.category] ?? 0) + t.amount;
+      }
+    }
+    return map.entries.map((e) => (e.key, e.value)).toList()..sort((a, b) => b.$2.compareTo(a.$2));
+  }
+
   /// [asOf] 시점까지 한 해 동안 낼 회비와 낸 회비.
   static List<DuesStatus> dues({
     required List<Member> members,

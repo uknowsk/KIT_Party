@@ -8,9 +8,13 @@ import '../format.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/sheet.dart';
+import 'report_view.dart';
 import 'txn_editor.dart';
 
 enum _Filter { all, income, expense }
+
+/// 장부 보기: 기록 목록 / 한 달 정리 / 한 해 정리.
+enum _Mode { list, month, year }
 
 class LedgerPage extends StatefulWidget {
   const LedgerPage({super.key});
@@ -21,6 +25,9 @@ class LedgerPage extends StatefulWidget {
 
 class _LedgerPageState extends State<LedgerPage> {
   var _filter = _Filter.all;
+  var _mode = _Mode.list;
+  late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+  late int _year = DateTime.now().year;
   String? _selectedId;
 
   @override
@@ -39,7 +46,7 @@ class _LedgerPageState extends State<LedgerPage> {
     }
 
     return LayoutBuilder(builder: (context, c) {
-      final wide = c.maxWidth >= 760;
+      final wide = c.maxWidth >= 760 && _mode == _Mode.list;
       Txn? selected;
       for (final t in s.txns) {
         if (t.id == _selectedId) selected = t;
@@ -58,6 +65,35 @@ class _LedgerPageState extends State<LedgerPage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: CupertinoSlidingSegmentedControl<_Mode>(
+                key: const Key('ledgerMode'),
+                groupValue: _mode,
+                onValueChanged: (v) => setState(() => _mode = v!),
+                children: const {
+                  _Mode.list: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('내역')),
+                  _Mode.month: Text('월간'),
+                  _Mode.year: Text('연간'),
+                },
+              ),
+            ),
+          ),
+          if (_mode == _Mode.month)
+            SliverToBoxAdapter(child: MonthReport(month: _month, onChange: (m) => setState(() => _month = m)))
+          else if (_mode == _Mode.year)
+            SliverToBoxAdapter(
+              child: YearReport(
+                year: _year,
+                onChange: (y) => setState(() => _year = y),
+                onOpenMonth: (m) => setState(() {
+                  _month = m;
+                  _mode = _Mode.month;
+                }),
+              ),
+            )
+          else ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: CupertinoSlidingSegmentedControl<_Filter>(
                 groupValue: _filter,
                 onValueChanged: (v) => setState(() => _filter = v!),
@@ -101,6 +137,7 @@ class _LedgerPageState extends State<LedgerPage> {
                 ),
               ),
             ),
+          ],
           ],
         ],
       );

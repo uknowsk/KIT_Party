@@ -163,6 +163,12 @@ IconData categoryIcon(String c) => switch (c) {
       '번개' => Icons.bolt_rounded,
       '경조사' => Icons.local_florist_rounded,
       '생일선물' => Icons.cake_rounded,
+      '식사' => Icons.restaurant_rounded,
+      '숙박' => Icons.hotel_rounded,
+      '교통' => Icons.directions_bus_rounded,
+      '마트' => Icons.shopping_cart_rounded,
+      '시설이용' => Icons.sports_tennis_rounded,
+      '주차' => Icons.local_parking_rounded,
       _ => Icons.more_horiz_rounded,
     };
 
@@ -173,6 +179,12 @@ Color categoryColor(String c) => switch (c) {
       '번개' => AppColors.orange,
       '경조사' => const Color(0xFF8E8E93),
       '생일선물' => const Color(0xFFFF2D55),
+      '식사' => const Color(0xFFFFCC00),
+      '숙박' => const Color(0xFFAF52DE),
+      '교통' => const Color(0xFF30B0C7),
+      '마트' => const Color(0xFF00C7BE),
+      '시설이용' => const Color(0xFFA2845E),
+      '주차' => const Color(0xFF3A6EA5),
       _ => const Color(0xFF64D2FF),
     };
 

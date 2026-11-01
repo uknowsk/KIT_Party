@@ -9,7 +9,9 @@ class Categories {
   static const interest = '이자';
   static const otherIncome = '기타';
   static const income = [dues, interest, otherIncome];
-  static const expense = ['정기모임', '번개', '경조사', '생일선물', '기타'];
+  static const expense = [
+    '정기모임', '번개', '식사', '숙박', '교통', '마트', '시설이용', '주차', '경조사', '생일선물', '기타', //
+  ];
 
   static List<String> of(TxnType t) => t == TxnType.income ? income : expense;
 }

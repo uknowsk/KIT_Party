@@ -221,4 +221,41 @@ void main() {
     expect(find.text('손승현 12일'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
+
+  testWidgets('장부에서 월간·연간 수입/지출을 본다', (tester) async {
+    for (final size in [const Size(390, 844), const Size(320, 640), const Size(844, 390)]) {
+      await tester.pumpWidget(const SizedBox());
+      await pumpAt(tester, size);
+      await tester.tap(find.text('장부').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('월간'));
+      await tester.pumpAndSettle();
+      final now = DateTime.now();
+      expect(find.text('${now.year}년 ${now.month}월'), findsOneWidget);
+      await tester.tap(find.byTooltip('이전'));
+      await tester.pumpAndSettle();
+      final prev = DateTime(now.year, now.month - 1);
+      expect(find.text('${prev.year}년 ${prev.month}월'), findsOneWidget);
+      expect(find.text('지출 항목별'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: '$size 월간');
+      await tester.tap(find.text('연간'));
+      await tester.pumpAndSettle();
+      expect(find.text('${now.year}년'), findsOneWidget);
+      expect(find.byType(MonthlyFlowCard), findsOneWidget);
+      await tester.scrollUntilVisible(find.byKey(const ValueKey('ym1')), 200);
+      await Scrollable.ensureVisible(tester.element(find.byKey(const ValueKey('ym1'))), alignment: .5);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('ym1')));
+      await tester.pumpAndSettle();
+      expect(find.text('${now.year}년 1월'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: '$size 연간');
+      await tester.pump(const Duration(seconds: 1));
+    }
+  });
+
+  test('새 지출 항목이 있다', () {
+    for (final c in ['숙박', '교통', '마트', '식사', '시설이용', '주차']) {
+      expect(Categories.expense, contains(c));
+    }
+  });
 }

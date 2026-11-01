@@ -11,7 +11,10 @@ import 'ledger_page.dart';
 
 /// 회원 누구나 글을 남기는 곳.
 class MessagesPage extends StatefulWidget {
-  const MessagesPage({super.key});
+  const MessagesPage({super.key, this.embedded = false});
+
+  /// 소식 탭 안에 들어가 있으면 위 제목줄을 빼요.
+  final bool embedded;
 
   @override
   State<MessagesPage> createState() => _MessagesPageState();
@@ -83,7 +86,7 @@ class _MessagesPageState extends State<MessagesPage> {
     final items = s.messages.reversed.toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('메시지')),
+      appBar: widget.embedded ? null : AppBar(title: const Text('메시지')),
       body: Column(children: [
         if (pinned.isNotEmpty)
           Padding(

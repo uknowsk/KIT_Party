@@ -27,7 +27,7 @@ class MonthReport extends StatelessWidget {
     final now = DateTime.now();
     final last = DateTime(now.year, now.month);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Stepper(
+      PeriodStepper(
         key: const Key('monthStepper'),
         label: yearMonth(month),
         onPrev: month.isAfter(first) ? () => onChange(DateTime(y, m - 1)) : null,
@@ -87,7 +87,7 @@ class YearReport extends StatelessWidget {
     final firstYear = _firstMonth(s).year;
     final firstMonthThisYear = year == firstYear ? _firstMonth(s).month : 1;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Stepper(
+      PeriodStepper(
         key: const Key('yearStepper'),
         label: '$year년',
         onPrev: year > firstYear ? () => onChange(year - 1) : null,
@@ -153,42 +153,6 @@ DateTime _firstMonth(AppState s) {
     if (t.date.isBefore(d)) d = t.date;
   }
   return DateTime(d.year, d.month);
-}
-
-class _Stepper extends StatelessWidget {
-  const _Stepper({super.key, required this.label, this.onPrev, this.onNext});
-
-  final String label;
-  final VoidCallback? onPrev;
-  final VoidCallback? onNext;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
-        child: Row(children: [
-          IconButton(
-            tooltip: '이전',
-            onPressed: onPrev,
-            icon: const Icon(Icons.chevron_left_rounded, size: 30),
-          ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Text(
-                label,
-                key: ValueKey(label),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: '다음',
-            onPressed: onNext,
-            icon: const Icon(Icons.chevron_right_rounded, size: 30),
-          ),
-        ]),
-      );
 }
 
 class _Totals extends StatelessWidget {

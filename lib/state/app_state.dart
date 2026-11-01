@@ -14,6 +14,15 @@ class AppState extends ChangeNotifier {
       repo.txns().listen((v) => _set(() => txns = [...v]..sort((a, b) => b.date.compareTo(a.date)))),
       repo.messages().listen((v) => _set(() => messages = [...v]..sort((a, b) => a.createdAt.compareTo(b.createdAt)))),
       repo.settings().listen((v) => _set(() => settings = v)),
+      // 새 기능이라 서버 보안 규칙을 아직 안 바꿨으면 읽기가 막혀요. 그땐 빈 목록 + 안내.
+      repo.meetings().listen(
+            (v) => _set(() => meetings = [...v]..sort((a, b) => b.date.compareTo(a.date))),
+            onError: (_) => _set(() => rulesOutdated = true),
+          ),
+      repo.notices().listen(
+            (v) => _set(() => notices = [...v]..sort((a, b) => b.createdAt.compareTo(a.createdAt))),
+            onError: (_) => _set(() => rulesOutdated = true),
+          ),
     ];
   }
 
@@ -24,6 +33,15 @@ class AppState extends ChangeNotifier {
   List<Txn> txns = const [];
   List<Message> messages = const [];
   LedgerSettings? settings;
+
+  /// 모임 기록 (최근이 앞).
+  List<Meeting> meetings = const [];
+
+  /// 공지·투표 (최근이 앞).
+  List<Notice> notices = const [];
+
+  /// 서버 보안 규칙이 옛날 것이라 모임·공지를 못 읽었는지.
+  bool rulesOutdated = false;
 
   String? _myMemberId;
 
@@ -47,6 +65,9 @@ class AppState extends ChangeNotifier {
 
   /// 회비 면제를 정하고 풀 수 있는 사람: 총무만.
   bool get canManageExempt => isTreasurer;
+
+  /// 모임 기록·공지·투표를 쓰고 고칠 수 있는 사람: 총무와 회장.
+  bool get canManageEvents => isTreasurer || isPresident;
 
   Member? memberById(String? id) {
     for (final m in members) {

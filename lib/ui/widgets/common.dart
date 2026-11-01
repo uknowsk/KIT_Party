@@ -271,3 +271,79 @@ class LargeTitlePage extends StatelessWidget {
         ),
       );
 }
+
+/// ‹ 2026년 10월 › 처럼 기간을 넘기는 줄.
+class PeriodStepper extends StatelessWidget {
+  const PeriodStepper({super.key, required this.label, this.onPrev, this.onNext});
+
+  final String label;
+  final VoidCallback? onPrev;
+  final VoidCallback? onNext;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+        child: Row(children: [
+          IconButton(
+            tooltip: '이전',
+            onPressed: onPrev,
+            icon: const Icon(Icons.chevron_left_rounded, size: 30),
+          ),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                label,
+                key: ValueKey(label),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: '다음',
+            onPressed: onNext,
+            icon: const Icon(Icons.chevron_right_rounded, size: 30),
+          ),
+        ]),
+      );
+}
+
+/// 아래에 잠깐 뜨는 "저장했어요" 알림.
+void showDone(ScaffoldMessengerState messenger, String text) => messenger.showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.check_circle_rounded, color: Colors.white),
+        const SizedBox(width: 8),
+        Text(text),
+      ]),
+      duration: const Duration(seconds: 2),
+    ));
+
+/// 날짜 고르는 버튼.
+class DateButton extends StatelessWidget {
+  const DateButton({super.key, required this.date, required this.onPicked});
+
+  final DateTime date;
+  final ValueChanged<DateTime> onPicked;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(50),
+          side: BorderSide.none,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        icon: const Icon(Icons.calendar_today_rounded, size: 18),
+        label: Text('${date.year}년 ${monthDay(date)} (${weekday(date)})'),
+        onPressed: () async {
+          final d = await showDatePicker(
+            context: context,
+            initialDate: date,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+          );
+          if (d != null) onPicked(d);
+        },
+      );
+}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/ledger_math.dart';
+import '../../models/meeting_math.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../format.dart';
@@ -11,9 +12,11 @@ import 'ledger_page.dart';
 import 'txn_editor.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key, this.onOpenDues});
+  const HomePage({super.key, this.onOpenDues, this.onOpenMeetings, this.onOpenNews});
 
   final VoidCallback? onOpenDues;
+  final VoidCallback? onOpenMeetings;
+  final VoidCallback? onOpenNews;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +71,34 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 12),
               item(_MyDuesCard(status: myDues, onTap: onOpenDues)),
             ],
+            ...() {
+              final polls = s.notices.where((n) => n.isOpen(now)).toList();
+              if (polls.isEmpty) return const <Widget>[];
+              final notVoted = s.me != null && polls.any((n) => n.choicesOf(s.me!.id).isEmpty);
+              return [
+                const SizedBox(height: 12),
+                item(_InfoCard(
+                  key: const Key('homePolls'),
+                  icon: Icons.how_to_vote_rounded,
+                  color: AppColors.blue,
+                  title: '진행 중인 투표 ${polls.length}개',
+                  body: notVoted ? '아직 투표 안 했어요 · ${polls.first.title}' : polls.first.title,
+                  onTap: onOpenNews,
+                )),
+              ];
+            }(),
+            const SizedBox(height: 12),
+            item(_InfoCard(
+              key: const Key('homeNextRegion'),
+              icon: Icons.place_rounded,
+              color: const Color(0xFF5856D6),
+              title: '다음 정기모임은 ${MeetingMath.nextRegion(settings.rotation, s.meetings)} 차례',
+              body: switch (MeetingMath.lastRegular(s.meetings)) {
+                final m? => '지난번: ${m.region} · ${m.date.year}년 ${m.date.month}월',
+                null => '모임 탭에서 장소 순서와 참석률을 볼 수 있어요',
+              },
+              onTap: onOpenMeetings,
+            )),
             if (s.members.any((m) => m.birthMonth == now.month)) ...[
               const SizedBox(height: 12),
               item(_BirthdayCard(month: now.month, members: s.members)),
@@ -307,4 +338,39 @@ class DuesBar extends StatelessWidget {
           ]),
         ),
       );
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({super.key, required this.icon, required this.color, required this.title, required this.body, this.onTap});
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String body;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return AppCard(
+      onTap: onTap,
+      child: Row(children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.14), shape: BoxShape.circle),
+          child: Icon(icon, color: color, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: tt.titleSmall),
+            const SizedBox(height: 2),
+            Text(body, style: tt.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ]),
+        ),
+        if (onTap != null) const Icon(Icons.chevron_right_rounded, color: AppColors.gray),
+      ]),
+    );
+  }
 }

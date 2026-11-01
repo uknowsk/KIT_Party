@@ -11,7 +11,9 @@ import 'seed_2026.dart';
 /// - joinRequests/{uid}      가입 신청 (총무가 승인)
 /// - transactions/{id}       입출금 기록
 /// - messages/{id}           메시지
-/// - config/settings         시작 잔고, 월 회비, 최신 앱 버전
+/// - config/settings         시작 잔고, 월 회비, 최신 앱 버전, 회장, 모임 지역 순서
+/// - meetings/{id}           모임 기록 (참석자 포함)
+/// - notices/{id}            공지·투표 (votes.{회원id} = 고른 번호들)
 class FirestoreRepository implements LedgerRepository {
   FirestoreRepository({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
@@ -21,6 +23,8 @@ class FirestoreRepository implements LedgerRepository {
   CollectionReference<Map<String, dynamic>> get _users => _db.collection('users');
   CollectionReference<Map<String, dynamic>> get _txns => _db.collection('transactions');
   CollectionReference<Map<String, dynamic>> get _messages => _db.collection('messages');
+  CollectionReference<Map<String, dynamic>> get _meetings => _db.collection('meetings');
+  CollectionReference<Map<String, dynamic>> get _notices => _db.collection('notices');
   DocumentReference<Map<String, dynamic>> get _settings => _db.collection('config').doc('settings');
 
   @override
@@ -44,6 +48,47 @@ class FirestoreRepository implements LedgerRepository {
   @override
   Stream<LedgerSettings> settings() =>
       _settings.snapshots().map((d) => LedgerSettings.fromMap(d.data() ?? const {}));
+
+  @override
+  Stream<List<Meeting>> meetings() =>
+      _meetings.snapshots().map((s) => [for (final d in s.docs) Meeting.fromMap(d.id, d.data())]);
+
+  @override
+  Stream<List<Notice>> notices() => _notices
+      .orderBy('createdAt')
+      .limitToLast(100)
+      .snapshots()
+      .map((s) => [for (final d in s.docs) Notice.fromMap(d.id, d.data())]);
+
+  @override
+  Future<void> saveMeeting(Meeting m) {
+    final data = {...m.toMap(), 'updatedAt': FieldValue.serverTimestamp()};
+    return m.id.isEmpty ? _meetings.add(data) : _meetings.doc(m.id).set(data);
+  }
+
+  @override
+  Future<void> deleteMeeting(String id) => _meetings.doc(id).delete();
+
+  @override
+  Future<void> setRotation(List<String> order) => _settings.set({'rotation': order}, SetOptions(merge: true));
+
+  @override
+  Future<void> postNotice(Notice n) => _notices.add({
+        ...n.toMap(),
+        'votes': <String, dynamic>{},
+        'closed': false,
+        'authorUid': FirebaseAuth.instance.currentUser?.uid,
+      });
+
+  @override
+  Future<void> deleteNotice(String id) => _notices.doc(id).delete();
+
+  @override
+  Future<void> setNoticeClosed(String id, bool closed) => _notices.doc(id).update({'closed': closed});
+
+  @override
+  Future<void> vote(String noticeId, String memberId, List<int> choices) =>
+      _notices.doc(noticeId).update({FieldPath(['votes', memberId]): choices});
 
   @override
   Future<void> saveTxn(Txn t) {

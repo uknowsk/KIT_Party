@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'pages/dues_page.dart';
 import 'pages/home_page.dart';
 import 'pages/ledger_page.dart';
-import 'pages/messages_page.dart';
+import 'pages/meetings_page.dart';
+import 'pages/notices_page.dart';
 import 'pages/settings_page.dart';
 
-/// 세로 화면: 아래 탭 5개 / 가로·큰 화면: 왼쪽 메뉴.
+/// 세로 화면: 아래 탭 6개 / 가로·큰 화면: 왼쪽 메뉴.
 class AppShell extends StatefulWidget {
   const AppShell({super.key, this.onSignOut});
 
@@ -23,15 +24,21 @@ class _AppShellState extends State<AppShell> {
     (Icons.home_outlined, Icons.home_rounded, '홈'),
     (Icons.receipt_long_outlined, Icons.receipt_long_rounded, '장부'),
     (Icons.people_outline_rounded, Icons.people_rounded, '회비'),
-    (Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, '메시지'),
+    (Icons.celebration_outlined, Icons.celebration_rounded, '모임'),
+    (Icons.campaign_outlined, Icons.campaign_rounded, '소식'),
     (Icons.settings_outlined, Icons.settings_rounded, '설정'),
   ];
 
   Widget _page(int i) => switch (i) {
-        0 => HomePage(onOpenDues: () => setState(() => _index = 2)),
+        0 => HomePage(
+            onOpenDues: () => setState(() => _index = 2),
+            onOpenMeetings: () => setState(() => _index = 3),
+            onOpenNews: () => setState(() => _index = 4),
+          ),
         1 => const LedgerPage(),
         2 => const DuesPage(),
-        3 => const MessagesPage(),
+        3 => const MeetingsPage(),
+        4 => const NewsPage(),
         _ => SettingsPage(onSignOut: widget.onSignOut),
       };
 

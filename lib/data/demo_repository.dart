@@ -22,7 +22,82 @@ class DemoRepository implements LedgerRepository {
         pinned: true,
       ),
     ];
+    final ids = [for (final m in ms) m.id];
+    _meetings.value = [
+      Meeting(
+        id: 'mt_1',
+        date: DateTime(2026, 4, 18),
+        kind: MeetingKind.regular,
+        region: '부산',
+        place: '해운대',
+        attendeeIds: ids.take(10).toList(),
+      ),
+      Meeting(
+        id: 'mt_2',
+        date: DateTime(2026, 6, 5),
+        kind: MeetingKind.flash,
+        place: '대전 성심당 근처',
+        attendeeIds: ids.skip(2).take(5).toList(),
+      ),
+      Meeting(
+        id: 'mt_3',
+        date: DateTime(2026, 9, 12),
+        kind: MeetingKind.regular,
+        region: '서울·경기',
+        place: '수원',
+        attendeeIds: ids.skip(1).take(9).toList(),
+      ),
+    ];
+    _notices.value = [
+      Notice(
+        id: 'nt_1',
+        authorId: treasurer.id,
+        authorName: treasurer.name,
+        title: '12월 정기모임 날짜 정해요',
+        body: '이번엔 충청 차례예요. 되는 날을 모두 골라 주세요!',
+        createdAt: DateTime(2026, 10, 28, 20),
+        poll: const Poll(options: ['12월 6일 (토)', '12월 13일 (토)', '12월 20일 (토)'], multi: true),
+        votes: {ids[1]: [0, 1], ids[2]: [1], ids[3]: [1, 2]},
+      ),
+    ];
   }
+
+  final _meetings = _Box<List<Meeting>>();
+  final _notices = _Box<List<Notice>>();
+
+  @override
+  Stream<List<Meeting>> meetings() => _meetings.stream;
+  @override
+  Stream<List<Notice>> notices() => _notices.stream;
+
+  @override
+  Future<void> saveMeeting(Meeting m) async {
+    final id = m.id.isEmpty ? 'mt_d${_seq++}' : m.id;
+    _meetings.value = [..._meetings.value.where((x) => x.id != id), m.withId(id)];
+  }
+
+  @override
+  Future<void> deleteMeeting(String id) async => _meetings.value = _meetings.value.where((x) => x.id != id).toList();
+
+  @override
+  Future<void> setRotation(List<String> order) async => _settings.value = _settings.value.copyWith(rotation: order);
+
+  @override
+  Future<void> postNotice(Notice n) async =>
+      _notices.value = [..._notices.value, n.copyWith(id: 'nt_d${_seq++}', votes: const {}, closed: false)];
+
+  @override
+  Future<void> deleteNotice(String id) async => _notices.value = _notices.value.where((x) => x.id != id).toList();
+
+  @override
+  Future<void> setNoticeClosed(String id, bool closed) async =>
+      _notices.value = [for (final n in _notices.value) n.id == id ? n.copyWith(closed: closed) : n];
+
+  @override
+  Future<void> vote(String noticeId, String memberId, List<int> choices) async => _notices.value = [
+        for (final n in _notices.value)
+          n.id == noticeId ? n.copyWith(votes: {...n.votes, memberId: choices}) : n,
+      ];
 
   final _members = _Box<List<Member>>();
   final _txns = _Box<List<Txn>>();
@@ -83,15 +158,7 @@ class DemoRepository implements LedgerRepository {
 
   @override
   Future<void> setPresident(String memberId) async {
-    final s = _settings.value;
-    _settings.value = LedgerSettings(
-      openingBalance: s.openingBalance,
-      openingDate: s.openingDate,
-      monthlyDues: s.monthlyDues,
-      latestVersion: s.latestVersion,
-      apkUrl: s.apkUrl,
-      presidentId: memberId,
-    );
+    _settings.value = _settings.value.copyWith(presidentId: memberId);
   }
 
   @override

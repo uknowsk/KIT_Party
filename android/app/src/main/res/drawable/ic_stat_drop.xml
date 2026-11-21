@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 알림줄 작은 아이콘: 물방울 (흰색 한 가지 색이어야 해요) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2.5C12,2.5 5.5,9.8 5.5,14.5a6.5,6.5 0,0 0,13 0C18.5,9.8 12,2.5 12,2.5z" />
+</vector>

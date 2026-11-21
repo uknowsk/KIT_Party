@@ -68,3 +68,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // 설치 파일을 설치 화면에 넘겨줄 때 쓰는 FileProvider
+    implementation("androidx.core:core:1.16.0")
+}

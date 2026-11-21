@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../app_info.dart';
 import '../../data/firestore_repository.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
+import '../../update/update_prompt.dart';
+import '../../update/updater.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'ledger_page.dart';
@@ -133,7 +134,9 @@ class SettingsPage extends StatelessWidget {
           ],
           const SectionHeader('앱 정보'),
           group([
-            tile('버전', value: appVersion),
+            tile('버전', trailing: const _VersionText()),
+            if (UpdateWatcher.of(context)?.enabled ?? false)
+              tile('업데이트 확인', onTap: () => UpdateWatcher.of(context)!.check(manual: true)),
             tile('데이터', value: repo.isDemo ? '체험 모드' : '실시간 동기화'),
           ]),
         ]),
@@ -307,4 +310,16 @@ class _JoinRequests extends StatelessWidget {
       },
     );
   }
+}
+
+/// 지금 깔린 앱 버전 (설치 파일에서 읽어요).
+class _VersionText extends StatelessWidget {
+  const _VersionText();
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<String>(
+        future: Updater.currentVersion(),
+        builder: (context, snap) => Text(snap.hasData ? 'v${snap.data}' : '-',
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: AppColors.gray)),
+      );
 }

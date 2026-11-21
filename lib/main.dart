@@ -10,6 +10,7 @@ import 'ui/shell.dart';
 import 'ui/sign_in.dart';
 import 'ui/splash.dart';
 import 'ui/theme.dart';
+import 'update/update_prompt.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,13 +19,16 @@ Future<void> main() async {
   if (options != null) {
     await Firebase.initializeApp(options: options);
   }
-  runApp(KitPartyApp(useFirebase: options != null));
+  runApp(KitPartyApp(useFirebase: options != null, checkUpdates: true));
 }
 
 class KitPartyApp extends StatelessWidget {
-  const KitPartyApp({super.key, required this.useFirebase, this.demoState});
+  const KitPartyApp({super.key, required this.useFirebase, this.demoState, this.checkUpdates = false});
 
   final bool useFirebase;
+
+  /// 새 버전 확인·업데이트 알림. 실제 앱에서만 켜요 (테스트에서는 꺼요).
+  final bool checkUpdates;
 
   /// 테스트에서 미리 만든 상태를 넣을 때.
   final AppState? demoState;
@@ -37,7 +41,11 @@ class KitPartyApp extends StatelessWidget {
         darkTheme: AppTheme.dark(),
         // 폰 글씨 크기 설정은 따르되, 화면이 깨지지 않게 1.3배까지만.
         builder: (context, child) => MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3, child: child!),
-        home: SplashGate(child: useFirebase ? const AuthGate() : _DemoRoot(state: demoState)),
+        home: UpdateWatcher(
+          enabled: checkUpdates,
+          push: useFirebase,
+          child: SplashGate(child: useFirebase ? const AuthGate() : _DemoRoot(state: demoState)),
+        ),
       );
 }
 

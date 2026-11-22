@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../cards/card_inbox.dart';
 import '../../models/ledger_math.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
@@ -8,6 +9,7 @@ import '../format.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/sheet.dart';
+import 'card_import_page.dart';
 import 'report_view.dart';
 import 'txn_editor.dart';
 
@@ -54,6 +56,14 @@ class _LedgerPageState extends State<LedgerPage> {
 
       final list = LargeTitlePage(
         title: '장부',
+        actions: [
+          if (s.isTreasurer && CardInbox.supported)
+            IconButton(
+              tooltip: '카드 결제 가져오기',
+              onPressed: () => openCardImport(context),
+              icon: const Icon(Icons.credit_card_rounded),
+            ),
+        ],
         floating: s.isTreasurer
             ? FloatingActionButton(
                 onPressed: () => showTxnEditor(context),

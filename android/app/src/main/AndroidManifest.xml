@@ -2,6 +2,8 @@
     <!-- 새 버전 APK를 내려받고 설치 화면을 열려면 필요해요 -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- 총무가 켜면: 카드 결제 문자를 읽어 지출 후보로 보여줘요 (폰 밖으로 안 보내요) -->
+    <uses-permission android:name="android.permission.READ_SMS"/>
     <application
         android:label="회비장부"
         android:name="${applicationName}"
@@ -38,6 +40,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/update_paths" />
         </provider>
+        <!-- 총무가 켜면: 카드 앱 결제 알림을 지출 후보로 모아둬요 -->
+        <service
+            android:name=".CardNotificationListener"
+            android:label="회비장부 카드 결제 알림"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
         <!-- 푸시 알림 모양: 물방울 아이콘, 파란색, "앱 업데이트" 알림 채널 -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

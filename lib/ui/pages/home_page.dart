@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../cards/card_inbox.dart';
 import '../../models/ledger_math.dart';
 import '../../models/meeting_math.dart';
 import '../../models/models.dart';
@@ -8,6 +9,7 @@ import '../format.dart';
 import '../theme.dart';
 import '../widgets/charts.dart';
 import '../widgets/common.dart';
+import 'card_import_page.dart';
 import 'ledger_page.dart';
 import 'txn_editor.dart';
 
@@ -129,6 +131,17 @@ class HomePage extends StatelessWidget {
                         )),
                   ),
                 ),
+                if (CardInbox.supported) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickButton(
+                      key: const Key('homeCardImport'),
+                      icon: Icons.credit_card_rounded,
+                      label: '카드 결제',
+                      onTap: () => openCardImport(context),
+                    ),
+                  ),
+                ],
               ])),
             ],
           ]),
@@ -263,7 +276,7 @@ class _Stat extends StatelessWidget {
 }
 
 class _QuickButton extends StatelessWidget {
-  const _QuickButton({required this.icon, required this.label, required this.onTap});
+  const _QuickButton({super.key, required this.icon, required this.label, required this.onTap});
 
   final IconData icon;
   final String label;
@@ -274,11 +287,14 @@ class _QuickButton extends StatelessWidget {
     final c = Theme.of(context).colorScheme.primary;
     return AppCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, color: c, size: 20),
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.labelLarge!.copyWith(color: c)),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: c, size: 22),
+        const SizedBox(height: 4),
+        Text(label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelLarge!.copyWith(color: c)),
       ]),
     );
   }

@@ -18,9 +18,8 @@ Future<void> openCardImport(BuildContext context) => Navigator.of(context).push(
 
 /// 어떤 날의 결제를 볼까요?
 enum CardPeriod {
-  meetings('모임 날만'),
-  recent('최근 30일'),
-  custom('기간 고르기');
+  dates('달력에서 날짜 고르기'),
+  meetings('모임 날');
 
   const CardPeriod(this.label);
   final String label;
@@ -28,10 +27,13 @@ enum CardPeriod {
 
 /// 총무 폰의 카드 결제 문자·알림 → 지출 후보 → 확인 후 장부에 저장.
 class CardImportPage extends StatefulWidget {
-  const CardImportPage({super.key, this.preload});
+  const CardImportPage({super.key, this.preload, this.preloadGranted = true});
 
   /// 테스트용: 폰 대신 넣어줄 결제 목록.
   final List<CardCharge>? preload;
+
+  /// 테스트용: 권한이 켜진 것처럼 보일지.
+  final bool preloadGranted;
 
   @override
   State<CardImportPage> createState() => _CardImportPageState();
@@ -45,8 +47,10 @@ class _CardImportPageState extends State<CardImportPage> with WidgetsBindingObse
   Set<String> _cards = {};
   Set<String> _handled = {};
   final Set<String> _picked = {};
-  var _period = CardPeriod.meetings;
-  DateTimeRange? _range;
+  var _period = CardPeriod.dates;
+
+  /// 달력에서 고른 날 (시각 없이 날짜만).
+  Set<DateTime> _dates = {};
   bool _showHandled = false;
   bool _saving = false;
 
@@ -69,29 +73,42 @@ class _CardImportPageState extends State<CardImportPage> with WidgetsBindingObse
     if (state == AppLifecycleState.resumed) _refresh();
   }
 
-  DateTimeRange get _loadRange {
+  /// 읽을 시간 구간들. 고른 날만 읽고 나머지 날 문자는 열어보지도 않아요.
+  List<(DateTime, DateTime)> _windows(AppState s) {
     final now = DateTime.now();
-    return switch (_period) {
-      CardPeriod.recent => DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now),
-      CardPeriod.meetings => DateTimeRange(start: now.subtract(const Duration(days: 120)), end: now),
-      CardPeriod.custom => _range ?? DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now),
+    final days = switch (_period) {
+      CardPeriod.dates => _dates.toList(),
+      CardPeriod.meetings => [
+          for (final m in s.meetings)
+            if (now.difference(m.date).inDays <= 366) DateUtils.dateOnly(m.date),
+        ],
     };
+    // 모임은 다음 날 새벽 6시까지 (2차·3차)
+    final extra = _period == CardPeriod.meetings ? const Duration(days: 1, hours: 6) : const Duration(days: 1);
+    return [for (final d in days.toSet()) (d, d.add(extra).subtract(const Duration(seconds: 1)))];
   }
 
   Future<void> _refresh() async {
     if (widget.preload != null) {
       setState(() {
         _all = widget.preload!;
-        _smsOk = true;
-        _notiOk = true;
+        _smsOk = widget.preloadGranted;
+        _notiOk = widget.preloadGranted;
         _loading = false;
       });
       return;
     }
+    // initState에서도 불려서, 구독 없이 상태만 읽어요.
+    final windows = _windows(context.getInheritedWidgetOfExactType<AppScope>()!.notifier!);
     final sms = await CardInbox.smsGranted();
     final noti = await CardInbox.notiEnabled();
-    final r = _loadRange;
-    final list = await CardInbox.load(r.start, DateTime(r.end.year, r.end.month, r.end.day, 23, 59, 59));
+    final list = <CardCharge>[];
+    for (final (from, to) in windows) {
+      for (final c in await CardInbox.load(from, to)) {
+        if (!list.any((o) => o.key == c.key)) list.add(c);
+      }
+    }
+    list.sort((a, b) => b.time.compareTo(a.time));
     final cards = await CardInbox.chosenCards();
     final handled = await CardInbox.handled();
     if (!mounted) return;
@@ -150,10 +167,7 @@ class _CardImportPageState extends State<CardImportPage> with WidgetsBindingObse
         if (_cards.isNotEmpty && !_cards.contains(c.cardLabel)) return false;
         if (!_showHandled && _handled.contains(c.key)) return false;
         if (_period == CardPeriod.meetings && _meetingOf(c, s.meetings) == null) return false;
-        if (_period == CardPeriod.custom && _range != null) {
-          final end = _range!.end.add(const Duration(days: 1));
-          if (c.time.isBefore(_range!.start) || !c.time.isBefore(end)) return false;
-        }
+        if (_period == CardPeriod.dates && !_dates.contains(DateUtils.dateOnly(c.time))) return false;
         return true;
       }).toList();
 
@@ -224,18 +238,25 @@ class _CardImportPageState extends State<CardImportPage> with WidgetsBindingObse
     }
   }
 
-  Future<void> _pickRange() async {
-    final now = DateTime.now();
-    final r = await showDateRangePicker(
+  Future<void> _pickDates() async {
+    final picked = await showModalBottomSheet<Set<DateTime>>(
       context: context,
-      firstDate: DateTime(now.year - 1),
-      lastDate: now,
-      initialDateRange: _range ?? DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => MultiDatePicker(initial: _dates),
     );
-    if (r == null) return;
+    if (picked == null) return;
     setState(() {
-      _range = r;
-      _period = CardPeriod.custom;
+      _dates = picked;
+      _period = CardPeriod.dates;
+      _loading = true;
+    });
+    _refresh();
+  }
+
+  void _removeDate(DateTime d) {
+    setState(() {
+      _dates = {..._dates}..remove(d);
       _loading = true;
     });
     _refresh();
@@ -318,10 +339,6 @@ class _CardImportPageState extends State<CardImportPage> with WidgetsBindingObse
                   key: const Key('cardPeriod'),
                   groupValue: _period,
                   onValueChanged: (v) {
-                    if (v == CardPeriod.custom) {
-                      _pickRange();
-                      return;
-                    }
                     setState(() {
                       _period = v!;
                       _loading = true;
@@ -330,15 +347,40 @@ class _CardImportPageState extends State<CardImportPage> with WidgetsBindingObse
                   },
                   children: {
                     for (final p in CardPeriod.values)
-                      p: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Text(p == CardPeriod.custom && _range != null
-                            ? '${_range!.start.month}/${_range!.start.day}~${_range!.end.month}/${_range!.end.day}'
-                            : p.label),
-                      ),
+                      p: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(p.label)),
                   },
                 ),
               ),
+              if (_period == CardPeriod.dates) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: OutlinedButton.icon(
+                    key: const Key('cardPickDates'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      side: BorderSide.none,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.calendar_month_rounded, size: 20),
+                    label: Text(_dates.isEmpty ? '달력에서 날짜 고르기' : '날짜 ${_dates.length}개 골랐어요 · 바꾸기'),
+                    onPressed: _pickDates,
+                  ),
+                ),
+                if (_dates.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                    child: Wrap(spacing: 6, runSpacing: 6, children: [
+                      for (final d in (_dates.toList()..sort()))
+                        InputChip(
+                          label: Text('${d.month}/${d.day} (${weekday(d)})'),
+                          onDeleted: () => _removeDate(d),
+                        ),
+                    ]),
+                  )
+                else
+                  const _Info('고른 날의 결제 문자만 읽어요. 여러 날을 골라도 돼요.'),
+              ],
               if (_period == CardPeriod.meetings)
                 _Info(s.meetings.isEmpty
                     ? '모임 탭에 모임 날짜를 넣으면, 그날(새벽 6시까지) 결제만 골라 보여드려요.'
@@ -379,7 +421,9 @@ class _CardImportPageState extends State<CardImportPage> with WidgetsBindingObse
                       }),
               ),
               if (!_loading && visible.isEmpty)
-                const _Info('보여드릴 결제가 없어요. 기간이나 카드를 바꿔보세요.'),
+                _Info(_period == CardPeriod.dates && _dates.isEmpty
+                    ? '위에서 날짜를 골라주세요.'
+                    : '보여드릴 결제가 없어요. 날짜나 카드를 바꿔보세요.'),
               for (final c in visible)
                 _ChargeTile(
                   charge: c,
@@ -449,7 +493,12 @@ class _SetupRow extends StatelessWidget {
         const SizedBox(width: 8),
         on
             ? const Badge2('켜짐', color: AppColors.green)
-            : FilledButton.tonal(onPressed: onTap, child: const Text('켜기')),
+            // 앱 테마의 버튼은 가로를 꽉 채우려 해서, 줄 안에서는 크기를 정해줘야 해요.
+            : FilledButton.tonal(
+                style: FilledButton.styleFrom(minimumSize: const Size(64, 40)),
+                onPressed: onTap,
+                child: const Text('켜기'),
+              ),
       ]),
     );
   }
@@ -555,4 +604,124 @@ class _TextBtn extends StatelessWidget {
         onTap: onTap,
         child: Text(text, style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w600, fontSize: 13)),
       );
+}
+
+/// 달력에서 날짜를 여러 개 고르는 창. 고른 날 묶음을 돌려줘요.
+class MultiDatePicker extends StatefulWidget {
+  const MultiDatePicker({super.key, required this.initial});
+
+  final Set<DateTime> initial;
+
+  @override
+  State<MultiDatePicker> createState() => _MultiDatePickerState();
+}
+
+class _MultiDatePickerState extends State<MultiDatePicker> {
+  late final Set<DateTime> _sel = {...widget.initial};
+  late DateTime _month = () {
+    final base = widget.initial.isEmpty ? DateTime.now() : (widget.initial.toList()..sort()).last;
+    return DateTime(base.year, base.month);
+  }();
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final today = DateUtils.dateOnly(DateTime.now());
+    final first = DateTime(_month.year, _month.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(_month.year, _month.month);
+    final lead = first.weekday % 7; // 일요일 시작
+    final canNext = DateTime(_month.year, _month.month + 1).isBefore(today.add(const Duration(days: 1)));
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('날짜 고르기', style: tt.titleLarge, textAlign: TextAlign.center),
+          const SizedBox(height: 4),
+          Text('결제 문자를 읽을 날을 눌러 고르세요. 여러 개 돼요.',
+              style: tt.bodySmall!.copyWith(color: AppColors.gray), textAlign: TextAlign.center),
+          Row(children: [
+            IconButton(
+              tooltip: '이전 달',
+              onPressed: () => setState(() => _month = DateTime(_month.year, _month.month - 1)),
+              icon: const Icon(Icons.chevron_left_rounded, size: 30),
+            ),
+            Expanded(child: Text(yearMonth(_month), style: tt.titleMedium, textAlign: TextAlign.center)),
+            IconButton(
+              tooltip: '다음 달',
+              onPressed: canNext ? () => setState(() => _month = DateTime(_month.year, _month.month + 1)) : null,
+              icon: const Icon(Icons.chevron_right_rounded, size: 30),
+            ),
+          ]),
+          Row(children: [
+            for (final (i, w) in const ['일', '월', '화', '수', '목', '금', '토'].indexed)
+              Expanded(
+                child: Text(w,
+                    textAlign: TextAlign.center,
+                    style: tt.labelMedium!.copyWith(color: i == 0 ? AppColors.red : AppColors.gray)),
+              ),
+          ]),
+          const SizedBox(height: 4),
+          LayoutBuilder(builder: (context, c) {
+            final cell = (c.maxWidth / 7).clamp(30.0, 56.0);
+            return Wrap(children: [
+              for (var i = 0; i < lead; i++) SizedBox(width: c.maxWidth / 7, height: cell),
+              for (var d = 1; d <= daysInMonth; d++)
+                Builder(builder: (context) {
+                  final day = DateTime(_month.year, _month.month, d);
+                  final future = day.isAfter(today);
+                  final on = _sel.contains(day);
+                  return SizedBox(
+                    width: c.maxWidth / 7,
+                    height: cell,
+                    child: Center(
+                      child: InkWell(
+                        key: ValueKey('day-${day.month}-${day.day}'),
+                        customBorder: const CircleBorder(),
+                        onTap: future
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                setState(() => on ? _sel.remove(day) : _sel.add(day));
+                              },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: cell - 6,
+                          height: cell - 6,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: on ? primary : Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: day == today && !on ? Border.all(color: primary) : null,
+                          ),
+                          child: Text('$d',
+                              style: tt.bodyLarge!.copyWith(
+                                color: on ? Colors.white : (future ? AppColors.gray.withValues(alpha: 0.5) : null),
+                                fontWeight: on ? FontWeight.w700 : null,
+                              )),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+            ]);
+          }),
+          const SizedBox(height: 12),
+          Row(children: [
+            if (_sel.isNotEmpty)
+              TextButton(onPressed: () => setState(_sel.clear), child: const Text('모두 지우기')),
+            const Spacer(),
+            FilledButton(
+              key: const Key('datesDone'),
+              style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
+              onPressed: () => Navigator.pop(context, _sel),
+              child: Text(_sel.isEmpty ? '확인' : '${_sel.length}일 확인'),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
 }

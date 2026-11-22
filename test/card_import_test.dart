@@ -33,8 +33,19 @@ void main() {
     await tester.pumpAndSettle();
     final before = state.txns.length;
 
-    await tester.tap(find.text('최근 30일'));
+    // 날짜를 안 고르면 아무것도 안 보여요
+    expect(find.text('고기굽는집'), findsNothing);
+    await tester.tap(find.byKey(const Key('cardPickDates')));
     await tester.pumpAndSettle();
+    if (rx.month != now.month) {
+      await tester.tap(find.byTooltip('이전 달'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.byKey(ValueKey('day-${rx.month}-${rx.day}')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('datesDone')));
+    await tester.pumpAndSettle();
+    expect(find.text('${rx.month}/${rx.day} (${const ['월', '화', '수', '목', '금', '토', '일'][rx.weekday - 1]})'), findsOneWidget);
     expect(find.text('고기굽는집'), findsOneWidget);
     expect(find.text('숙박'), findsOneWidget);
     expect(find.text('마트'), findsOneWidget);
@@ -55,5 +66,28 @@ void main() {
     expect(find.textContaining('저장하지 못했어요'), findsNothing);
     expect(find.text('고기굽는집'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('권한이 꺼져 있을 때: 켜기 줄이 깨지지 않고 버튼이 눌린다', (tester) async {
+    for (final size in const [Size(390, 844), Size(320, 640), Size(844, 390)]) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      final state = AppState(DemoRepository(), myMemberId: memberIdOf(seedTreasurer));
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light(),
+        home: AppScope(state: state, child: const CardImportPage(preload: [], preloadGranted: false)),
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '$size');
+      expect(find.text('카드 결제 문자 읽기'), findsOneWidget);
+      // 제목이 한 줄로 보일 만큼 넓은지 (세로로 한 글자씩 깨지지 않게)
+      expect(tester.getSize(find.text('카드 결제 문자 읽기')).width, greaterThan(100), reason: '$size');
+      final btn = find.widgetWithText(FilledButton, '켜기').first;
+      expect(tester.getSize(btn).width, lessThan(size.width / 2), reason: '$size');
+      await tester.tap(btn);
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: '$size');
+    }
+    tester.view.reset();
   });
 }

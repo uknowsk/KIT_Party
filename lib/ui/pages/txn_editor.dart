@@ -7,8 +7,9 @@ import '../../state/app_state.dart';
 import '../widgets/sheet.dart';
 import '../format.dart';
 
-/// 총무가 입출금 기록을 추가·수정하는 시트.
-Future<void> showTxnEditor(BuildContext context, {Txn? preset}) => showAppSheet(context, (_) => TxnEditor(preset: preset), scrollable: false);
+/// 총무가 입출금 기록을 추가·수정하는 시트. 저장하면 true.
+Future<bool> showTxnEditor(BuildContext context, {Txn? preset}) async =>
+    await showAppSheet<bool>(context, (_) => TxnEditor(preset: preset), scrollable: false) ?? false;
 
 class TxnEditor extends StatefulWidget {
   const TxnEditor({super.key, this.preset});
@@ -64,7 +65,7 @@ class _TxnEditorState extends State<TxnEditor> {
     HapticFeedback.mediumImpact();
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    Navigator.pop(context);
+    Navigator.pop(context, true);
     messenger.showSnackBar(SnackBar(
       content: Row(children: [
         const Icon(Icons.check_circle_rounded, color: Colors.white),

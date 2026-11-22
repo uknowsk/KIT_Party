@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../cards/card_inbox.dart';
 import '../../data/firestore_repository.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
@@ -8,6 +9,7 @@ import '../../update/update_prompt.dart';
 import '../../update/updater.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'card_import_page.dart';
 import 'ledger_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -114,6 +116,7 @@ class SettingsPage extends StatelessWidget {
           if (s.isTreasurer) ...[
             const SectionHeader('총무 메뉴'),
             group([
+              if (CardInbox.supported) tile('카드 결제 가져오기', onTap: () => openCardImport(context)),
               tile('회장 정하기',
                   value: s.memberById(s.presidentId)?.name,
                   onTap: () => _pickMember(context, '누가 회장인가요?', (m) => _run(context, () => repo.setPresident(m.id)))),
